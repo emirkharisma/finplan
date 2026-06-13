@@ -723,33 +723,13 @@ body {
       </div>
       <div class="auth-field">
         <label>Password</label>
-        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') Auth.login()">
       </div>
       <button class="auth-btn" id="authLoginBtn" onclick="Auth.login()">
         <span>Masuk</span>
       </button>
       <div class="auth-err" id="authErr"></div>
-      <div class="auth-switch">Belum punya akun? <a onclick="Auth.showRegister()">Daftar</a></div>
-    </div>
-
-    <div id="authRegisterView" style="display:none;">
-      <div class="auth-field">
-        <label>Nama</label>
-        <input type="text" id="regName" placeholder="Nama kamu" autocomplete="name">
-      </div>
-      <div class="auth-field">
-        <label>Email</label>
-        <input type="email" id="regEmail" placeholder="nama@email.com" autocomplete="email">
-      </div>
-      <div class="auth-field">
-        <label>Password</label>
-        <input type="password" id="regPassword" placeholder="Min. 6 karakter" autocomplete="new-password">
-      </div>
-      <button class="auth-btn" id="authRegBtn" onclick="Auth.register()">
-        <span>Buat Akun</span>
-      </button>
-      <div class="auth-err" id="regErr"></div>
-      <div class="auth-switch">Sudah punya akun? <a onclick="Auth.showLogin()">Masuk</a></div>
     </div>
   </div>
 </div>
@@ -2965,8 +2945,8 @@ const FamilyApp = {
 };
 
 // ── Supabase config ────────────────────────────────────────────────
-const SUPABASE_URL  = 'GANTI_DENGAN_SUPABASE_URL';
-const SUPABASE_ANON = 'GANTI_DENGAN_SUPABASE_ANON_KEY';
+const SUPABASE_URL  = 'https://uwgjgtpboaqejovfllcn.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_MFumtZS2mY0sx4-jmCgXNQ__8OtigYz';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── Sync indicator ──────────────────────────────────────────────────
@@ -3142,14 +3122,7 @@ const Auth = {
   },
 
   showLogin(){
-    document.getElementById('authLoginView').style.display = '';
-    document.getElementById('authRegisterView').style.display = 'none';
     document.getElementById('authErr').textContent = '';
-  },
-  showRegister(){
-    document.getElementById('authLoginView').style.display = 'none';
-    document.getElementById('authRegisterView').style.display = '';
-    document.getElementById('regErr').textContent = '';
   },
 
   async login(){
@@ -3165,21 +3138,6 @@ const Auth = {
       ? 'Email atau password salah.' : error.message;
   },
 
-  async register(){
-    const name  = document.getElementById('regName').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const pass  = document.getElementById('regPassword').value;
-    const btn   = document.getElementById('authRegBtn');
-    const err   = document.getElementById('regErr');
-    if(!name||!email||!pass){ err.textContent='Semua kolom wajib diisi.'; return; }
-    if(pass.length < 6){ err.textContent='Password minimal 6 karakter.'; return; }
-    btn.disabled = true; btn.querySelector('span').textContent = 'Membuat akun...';
-    const { error } = await _sb.auth.signUp({ email, password: pass, options: { data: { name } } });
-    btn.disabled = false; btn.querySelector('span').textContent = 'Buat Akun';
-    if(error){ err.textContent = error.message; return; }
-    err.style.color = 'var(--green)';
-    err.textContent = 'Cek email untuk konfirmasi, lalu login.';
-  },
 
   showMenu(){
     const user = this._user;
