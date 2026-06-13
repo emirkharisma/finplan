@@ -1254,19 +1254,19 @@ const App = {
     }
   },
   _refreshAllocRows(){
-    // Update alloc field values and section title for active income
-    const m = State.month;
-    const incomes = DB.getIncomes(m);
+    // Rebuild entire alloc section for the active income
+    const incomes = DB.getIncomes(State.month);
     const inc = incomes.find(e=>e.id===State.activeIncomeId)||incomes[0];
     if(!inc) return;
-    const alloc = inc.allocations||{};
-    document.querySelectorAll('.alloc-field[data-cat]').forEach(f=>{
-      const v = alloc[f.dataset.cat]||0;
-      f.value = v||'';
-    });
-    const title = document.querySelector('.alloc-active-title');
-    if(title) title.textContent = `Alokasi · ${inc.label}`;
+    const section = document.getElementById('allocSection');
+    if(section){
+      section.innerHTML = Render._allocSectionHTML(inc, inc.id);
+      reicons();
+    }
     updateAllocChart();
+    // Also update chart badge label
+    const badge = document.getElementById('chartBadge');
+    if(badge) badge.textContent = inc.label;
   },
   // ── Multi-income ──
   addIncome(label, amount, payDay=1){
@@ -1537,7 +1537,7 @@ const Render = {
       <div style="padding:18px 18px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div style="font-size:15px;font-weight:700;letter-spacing:-.02em;">Komposisi Alokasi</div>
-          <div style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:99px;padding:3px 10px;">${active?.label||'Pemasukan'}</div>
+          <div id="chartBadge" style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:99px;padding:3px 10px;">${active?.label||'Pemasukan'}</div>
         </div>
         <div style="position:relative;width:220px;height:220px;margin:0 auto 14px;">
           <canvas id="allocChart"></canvas>
@@ -1557,56 +1557,55 @@ const Render = {
     </div>
 
     <!-- ── Alloc for active income ── -->
-    <div class="section-flat">
+    <div id="allocSection">${Render._allocSectionHTML(active, activeId)}</div>`;
+
+    return h;
+  },
+
+  // Extracted so _refreshAllocRows can rebuild without full re-render
+  _allocSectionHTML(inc, incId){
+    if(!inc) return '';
+    const alloc = inc.allocations||{};
+    const allocTotal = Object.values(alloc).reduce((s,v)=>s+(v||0),0);
+    const diff = (inc.amount||0) - allocTotal;
+    const includedCats = CATEGORIES.filter(c => c.id in alloc);
+    return `<div class="section-flat">
       <div class="section-header" style="padding-bottom:4px;">
         <div>
-          <span class="card-title alloc-active-title">Alokasi · ${active?.label||''}</span>
-          ${active?.amount?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${fmtFull(active.amount)} · ${activeDiff<0?'<span style="color:var(--red)">Over '+fmtRp(Math.abs(activeDiff))+'</span>':activeDiff===0&&activeAlloc>0?'<span style="color:var(--green)">Penuh ✓</span>':'Sisa '+fmtRp(activeDiff)}</div>`:''}
+          <span class="card-title">Alokasi · ${inc.label||''}</span>
+          ${inc.amount?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${fmtFull(inc.amount)} · ${diff<0?'<span style="color:var(--red)">Over '+fmtRp(Math.abs(diff))+'</span>':diff===0&&allocTotal>0?'<span style="color:var(--green)">Penuh ✓</span>':'Sisa '+fmtRp(diff)}</div>`:''}
         </div>
-        ${DB.getTemplates().length?`<button onclick="Modal.openPickTemplate('${activeId}')"
+        ${DB.getTemplates().length?`<button onclick="Modal.openPickTemplate('${incId}')"
           style="flex-shrink:0;background:var(--blue-light);color:var(--blue);border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;">
           ${icon('bookmark',13,'currentColor')} Template
         </button>`:''}
       </div>
-      <div style="padding:0 18px 8px;">`;
-
-    // only show cats explicitly included in this income's allocations
-    const includedCats = CATEGORIES.filter(c => c.id in (active?.allocations||{}));
-    const excludedCats = CATEGORIES.filter(c => !(c.id in (active?.allocations||{})));
-
-    if(!includedCats.length){
-      h+=`<div style="text-align:center;padding:20px 0 12px;color:var(--text-faint);font-size:13px;">Belum ada pos alokasi.<br>Tap + untuk tambah.</div>`;
-    }
-    includedCats.forEach(cat=>{
-      const val = active.allocations[cat.id]||0;
-      h+=`<div class="alloc-row">
-        ${catBox(cat,36,15)}
-        <span class="alloc-name">${cat.name}</span>
-        <input class="alloc-field" data-cat="${cat.id}" type="number" inputmode="numeric"
-          value="${val||''}" placeholder="0"
-          oninput="Render._liveAllocTotal(${active?.amount||0})">
-        <button class="alloc-act alloc-del" onclick="App.removeAllocRow('${activeId}','${cat.id}')" title="Hapus dari sumber ini">${icon('x',13,'currentColor')}</button>
-      </div>`;
-    });
-
-    h+=`<button class="add-cat-btn" onclick="Modal.openAddAllocRow('${activeId}')">
-        ${icon('plus-circle',16,'currentColor')} Tambah Pos Alokasi
-      </button>
-      <div class="alloc-total">
-        <span>Total Alokasi</span>
-        <span class="alloc-total-val ${activeDiff<0?'over-budget':activeDiff===0&&activeAlloc>0?'':''}" id="allocTotal">${fmtRp(activeAlloc)}</span>
+      <div style="padding:0 18px 8px;">
+        ${!includedCats.length?`<div style="text-align:center;padding:20px 0 12px;color:var(--text-faint);font-size:13px;">Belum ada pos alokasi.<br>Tap + untuk tambah.</div>`:''}
+        ${includedCats.map(cat=>`<div class="alloc-row">
+          ${catBox(cat,36,15)}
+          <span class="alloc-name">${cat.name}</span>
+          <input class="alloc-field" data-cat="${cat.id}" type="number" inputmode="numeric"
+            value="${alloc[cat.id]||''}" placeholder="0"
+            oninput="Render._liveAllocTotal(${inc.amount||0})">
+          <button class="alloc-act alloc-del" onclick="App.removeAllocRow('${incId}','${cat.id}')" title="Hapus">${icon('x',13,'currentColor')}</button>
+        </div>`).join('')}
+        <button class="add-cat-btn" onclick="Modal.openAddAllocRow('${incId}')">
+          ${icon('plus-circle',16,'currentColor')} Tambah Pos Alokasi
+        </button>
+        <div class="alloc-total">
+          <span>Total Alokasi</span>
+          <span class="alloc-total-val ${diff<0?'over-budget':''}" id="allocTotal">${fmtRp(allocTotal)}</span>
+        </div>
       </div>
-    </div>
-    <div style="padding:0 18px 18px;display:flex;gap:8px;">
-      <button class="btn btn-primary save-alloc-btn" style="margin-top:0;" onclick="App.saveIncomeAllocations('${activeId}')">Simpan Alokasi</button>
-      <button onclick="Modal._saveTemplateFromModal()" title="Simpan sebagai template"
-        style="flex-shrink:0;margin-top:0;border:none;border-radius:var(--radius-sm);padding:0 16px;background:var(--blue-light);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
-        ${icon('bookmark',15,'currentColor')}
-      </button>
-    </div>
+      <div style="padding:0 18px 18px;display:flex;gap:8px;">
+        <button class="btn btn-primary save-alloc-btn" style="margin-top:0;" onclick="App.saveIncomeAllocations('${incId}')">Simpan Alokasi</button>
+        <button onclick="Modal._saveTemplateFromModal()" title="Simpan sebagai template"
+          style="flex-shrink:0;margin-top:0;border:none;border-radius:var(--radius-sm);padding:0 16px;background:var(--blue-light);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+          ${icon('bookmark',15,'currentColor')}
+        </button>
+      </div>
     </div>`;
-
-    return h;
   },
   _liveAllocTotal(incomeAmount){
     let total=0;
