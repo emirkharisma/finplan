@@ -1,0 +1,3138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#7c6fff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Keuangan Emir">
+<title>Keuangan Emir — FamFinance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface2: #f8f9fb;
+  --border: #eef0f3;
+  --divider: #f0f2f5;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-faint: #c4cad4;
+  --blue: #2563eb;
+  --blue-mid: #1d4ed8;
+  --blue-light: #eff6ff;
+  --blue-shadow: rgba(37,99,235,.18);
+  --green: #16a34a;
+  --red: #dc2626;
+  --amber: #d97706;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 4px rgba(15,23,42,.06);
+  --nav-h: 68px;
+  --header-h: 58px;
+  /* aliases for any legacy refs */
+  --purple: #2563eb;
+  --purple-light: #eff6ff;
+}
+html { height: 100%; }
+body { min-height: 100%; overflow-y: auto; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ── */
+.app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 480px; margin: 0 auto; }
+
+/* ── Header ── */
+.app-header {
+  height: var(--header-h);
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 14px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.back-btn {
+  display: flex; align-items: center; gap: 4px;
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 13px; font-weight: 600;
+  padding: 6px 10px 6px 8px;
+  border-radius: 99px;
+  background: var(--blue-light);
+  white-space: nowrap;
+  width: fit-content;
+  transition: opacity .15s;
+}
+.back-btn:active { opacity: .7; }
+.back-btn svg { flex-shrink: 0; }
+.month-nav {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 3px;
+}
+.month-btn {
+  background: none; border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+  flex-shrink: 0;
+}
+.month-btn:active { background: var(--border); color: var(--text); }
+.month-label {
+  font-weight: 700; font-size: 14px;
+  min-width: 96px; text-align: center;
+  letter-spacing: -.02em; color: var(--text);
+}
+.header-right {
+  display: flex; justify-content: flex-end; align-items: center;
+}
+.header-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), #60a5fa);
+  color: #fff;
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  box-shadow: 0 2px 6px var(--blue-shadow);
+}
+
+/* ── Main ── */
+.app-main {
+  flex: 1;
+  padding: 16px 16px 20px;
+}
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: none;
+  box-shadow: 0 -1px 0 var(--border), 0 -4px 16px rgba(15,23,42,.04);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+.nav-btn {
+  flex: 1; background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 0 6px;
+  color: var(--text-faint);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .01em;
+  transition: color .15s;
+  position: relative;
+}
+.nav-btn.active { color: var(--blue); }
+.nav-btn.active .nav-icon {
+  background: var(--blue-light);
+  border-radius: 10px;
+}
+.nav-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 28px;
+  border-radius: 10px;
+  transition: background .15s;
+}
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 18px);
+  right: max(18px, calc(50% - 222px));
+  width: 54px; height: 54px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-mid));
+  color: #fff;
+  border: none; cursor: pointer;
+  box-shadow: 0 6px 22px var(--blue-shadow), 0 2px 6px rgba(0,0,0,.1);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 20;
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s;
+}
+.fab:active { transform: scale(.91); box-shadow: 0 2px 8px var(--blue-shadow); }
+
+/* ── Hero card ── */
+.hero-card {
+  background: linear-gradient(145deg, #2563eb 0%, #1a4fd0 55%, #1e40af 100%);
+  border-radius: var(--radius);
+  padding: 24px 22px 20px;
+  margin-bottom: 14px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(37,99,235,.28), 0 1px 4px rgba(37,99,235,.12);
+}
+.hero-card::before {
+  content: '';
+  position: absolute; right: -30px; top: -30px;
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  pointer-events: none;
+}
+.hero-card::after {
+  content: '';
+  position: absolute; right: 40px; bottom: -40px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  pointer-events: none;
+}
+.hero-label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .09em;
+  opacity: .65; margin-bottom: 8px;
+}
+.hero-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 38px; font-weight: 800; line-height: 1;
+  letter-spacing: -.03em;
+}
+.hero-sub { font-size: 12px; opacity: .65; margin-top: 7px; font-weight: 500; }
+.hero-progress {
+  height: 4px; background: rgba(255,255,255,.18);
+  border-radius: 99px; margin-top: 16px; overflow: hidden;
+}
+.hero-progress-fill { height: 100%; border-radius: 99px; background: rgba(255,255,255,.75); transition: width .6s cubic-bezier(.4,0,.2,1); }
+.hero-stats {
+  display: flex; margin-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.14); padding-top: 16px;
+}
+.hero-stat { flex: 1; }
+.hero-stat + .hero-stat { border-left: 1px solid rgba(255,255,255,.14); padding-left: 18px; }
+.hs-label { font-size: 10px; opacity: .55; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.hs-val { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 10px;
+}
+/* Flat section — no shadow, just background */
+.section-flat {
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 12px;
+}
+.card-title {
+  font-size: 15px; font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--text);
+  margin-bottom: 0;
+}
+
+/* ── Category icon box ── */
+.cat-box {
+  width: 42px; height: 42px;
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cat-box svg { stroke-width: 1.8; }
+
+/* ── Budget rows ── */
+.budget-row { margin-bottom: 16px; }
+.budget-row:last-child { margin-bottom: 0; }
+.budget-top {
+  display: flex; align-items: center; gap: 13px; margin-bottom: 10px;
+}
+.budget-info { flex: 1; }
+.budget-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.budget-nums {
+  font-size: 11px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  display: flex; gap: 3px; align-items: baseline; margin-top: 2px;
+}
+.budget-nums .spent { font-size: 14px; font-weight: 700; color: var(--text); }
+.budget-track { height: 5px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.budget-fill { height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+.over-text { color: var(--red) !important; }
+
+/* ── Transaction rows ── */
+.tx-row {
+  display: flex; align-items: center; gap: 13px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.tx-row:last-child { border-bottom: none; }
+.tx-info { flex: 1; min-width: 0; }
+.tx-note { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.tx-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+.tx-amount { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--red); white-space: nowrap; }
+.tx-del {
+  background: none; border: none;
+  color: var(--text-faint);
+  cursor: pointer; padding: 6px;
+  border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+}
+.tx-del:active { background: #fee2e2; color: var(--red); }
+
+/* ── Full tx list ── */
+.tx-group { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 10px; }
+.tx-group-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 18px;
+  background: var(--surface2);
+}
+.tx-group-date { font-size: 12px; font-weight: 700; letter-spacing: .01em; color: var(--text-muted); }
+.tx-group-total { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--red); }
+.tx-group-items { padding: 0 18px; }
+
+/* ── Empty ── */
+.empty { text-align: center; padding: 52px 20px; color: var(--text-muted); }
+.empty svg { opacity: .25; margin-bottom: 12px; }
+.empty-label { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
+.empty-sub { font-size: 12px; color: var(--text-faint); }
+
+/* ── Summary rows ── */
+.summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-row .lbl { color: var(--text-muted); font-weight: 500; }
+.summary-row .val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+/* ── Income hero ── */
+.income-hero {
+  border-radius: var(--radius);
+  padding: 24px 22px 20px;
+  color: #fff;
+  margin-bottom: 14px;
+  position: relative; overflow: hidden;
+  transition: background .35s ease, box-shadow .35s ease;
+}
+.income-hero[data-color="0"] { background: linear-gradient(145deg, #2563eb 0%, #1a4fd0 55%, #1e40af 100%); box-shadow: 0 8px 28px rgba(37,99,235,.30), 0 2px 8px rgba(37,99,235,.16); }
+.income-hero[data-color="1"] { background: linear-gradient(145deg, #7c3aed 0%, #6d28d9 55%, #5b21b6 100%); box-shadow: 0 8px 28px rgba(124,58,237,.30), 0 2px 8px rgba(124,58,237,.16); }
+.income-hero::before {
+  content: '';
+  position: absolute; right: -24px; top: -24px;
+  width: 130px; height: 130px; border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  pointer-events: none;
+}
+.income-hero::after {
+  content: '';
+  position: absolute; left: -20px; bottom: -30px;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  pointer-events: none;
+}
+.income-hero { cursor: grab; user-select: none; touch-action: pan-y; }
+.income-hero-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; opacity: .65; margin-bottom: 7px; }
+.income-hero-val { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 800; letter-spacing: -.03em; }
+.income-hero-sub { font-size: 12px; opacity: .65; margin-top: 6px; font-weight: 500; }
+.income-hero-progress { height: 3px; background: rgba(255,255,255,.2); border-radius: 4px; overflow: hidden; margin-top: 14px; }
+.income-hero-progress-fill { height: 100%; border-radius: 4px; background: #fff; transition: width .4s; }
+/* swipe hint arrow */
+.income-hero-swipe-hint { position: absolute; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; opacity: .5; }
+/* dot indicator */
+.income-dots { display: flex; align-items: center; justify-content: center; gap: 6px; margin: -6px 0 12px; }
+.income-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: all .2s; cursor: pointer; }
+.income-dot.active { width: 18px; border-radius: 3px; background: var(--blue); }
+/* sticky hero wrapper */
+.income-hero-sticky {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 20;
+  background: var(--bg);
+  margin: -16px -16px 0;
+  padding: 12px 16px 8px;
+}
+/* slide animation */
+.income-hero.slide-left  { animation: slideInLeft  .28s cubic-bezier(.25,1,.5,1) both; }
+.income-hero.slide-right { animation: slideInRight .28s cubic-bezier(.25,1,.5,1) both; }
+@keyframes slideInLeft  { from { opacity:0; transform:translateX(32px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes slideInRight { from { opacity:0; transform:translateX(-32px) scale(.97); } to { opacity:1; transform:none; } }
+
+/* ── Alloc rows ── */
+.alloc-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.alloc-row:last-child { border-bottom: none; }
+.alloc-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+.alloc-field {
+  width: 106px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700;
+  text-align: right; color: var(--text);
+  outline: none; -webkit-appearance: none; appearance: none;
+}
+.alloc-field:focus { border-color: var(--blue); background: #fff; }
+.alloc-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0 0;
+  border-top: 2px solid var(--border); margin-top: 6px;
+  font-size: 14px; font-weight: 700;
+}
+.alloc-total-val { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; }
+.over-budget { color: var(--red); }
+.under-budget { color: var(--green); }
+
+/* ── Buttons ── */
+.btn {
+  width: 100%; border: none;
+  border-radius: var(--radius-sm);
+  padding: 16px; margin-top: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: -.01em;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), var(--blue-mid));
+  color: #fff;
+  box-shadow: 0 4px 14px var(--blue-shadow);
+}
+.btn-primary:active { opacity: .88; transform: scale(.98); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,14,26,.5);
+  z-index: 100; display: none;
+  align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(5px);
+}
+.modal-overlay.open { display: flex; }
+.modal-sheet {
+  background: var(--surface);
+  border-radius: 26px 26px 0 0;
+  width: 100%; max-width: 480px;
+  padding: 0 20px calc(env(safe-area-inset-bottom, 16px) + 20px);
+  max-height: 92dvh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32,0,.67,0);
+  box-shadow: 0 -4px 40px rgba(15,23,42,.14);
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); transition-timing-function: cubic-bezier(.33,1,.68,1); }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 99px; margin: 14px auto 22px; }
+.modal-title { font-size: 19px; font-weight: 800; margin-bottom: 22px; letter-spacing: -.03em; }
+
+/* ── Form ── */
+.form-group { margin-bottom: 18px; }
+.form-label {
+  font-size: 12px; font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: .01em; display: block; margin-bottom: 8px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 13px 15px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px; color: var(--text);
+  outline: none;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  -webkit-appearance: none; appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--blue); background: #fff;
+  box-shadow: 0 0 0 3px var(--blue-light);
+}
+.form-amount-wrap { position: relative; }
+.form-amount-prefix {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600;
+  color: var(--text-muted); pointer-events: none;
+}
+.form-amount {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 26px !important; font-weight: 700 !important;
+  padding-left: 48px !important; padding-top: 14px !important; padding-bottom: 14px !important;
+}
+.form-textarea { resize: none; height: 76px; }
+
+/* ── Category selector ── */
+.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cat-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  transition: all .15s;
+}
+.cat-option svg { flex-shrink: 0; stroke-width: 2; }
+.cat-option.selected { border-color: transparent; color: #fff; }
+
+/* ── Segmented control ── */
+.seg-btn {
+  border: none; background: none; cursor: pointer;
+  padding: 6px 14px; border-radius: 99px;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.seg-active {
+  background: var(--surface);
+  color: var(--blue);
+  box-shadow: 0 1px 4px rgba(15,23,42,.10);
+}
+
+/* ── Icon picker grid ── */
+.icon-picker-grid {
+  display: grid; grid-template-columns: repeat(5,1fr); gap: 6px;
+}
+.icon-pick-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  font-size: 9px; font-weight: 600; color: var(--text-muted);
+  transition: all .12s;
+  line-height: 1;
+}
+.icon-pick-btn.active {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  color: var(--blue);
+}
+/* ── Color picker row ── */
+.color-pick-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.color-pick-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  cursor: pointer; border: 2.5px solid transparent;
+  transition: transform .12s, border-color .12s;
+  flex-shrink: 0;
+}
+.color-pick-dot.active { border-color: var(--text); transform: scale(1.15); }
+
+/* ── Alloc action btns ── */
+.alloc-act {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-faint);
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: color .12s, background .12s;
+}
+.alloc-act:hover { color: var(--blue); background: var(--blue-light); }
+.alloc-del:hover { color: var(--red) !important; background: #fee2e2 !important; }
+/* ── Add category btn ── */
+.add-cat-btn {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 12px 4px;
+  background: none; border: none;
+  border-top: none;
+  margin-top: 0;
+  color: var(--blue);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  transition: opacity .12s;
+}
+.add-cat-btn:hover { opacity: .8; }
+.add-alloc-pick-list { display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; }
+.add-alloc-pick-btn { display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; font-size:14px; font-weight:500; color:var(--text-primary); text-align:left; cursor:pointer; transition:background .15s; }
+.add-alloc-pick-btn:hover { background:var(--bg); }
+.add-alloc-pick-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+/* ── View toggle (Personal / Keluarga) ── */
+.view-toggle { display:flex; background:var(--surface); border-radius:10px; padding:3px; gap:2px; margin-bottom:14px; box-shadow:var(--shadow); }
+.view-toggle-btn { flex:1; padding:8px 4px; border:none; background:none; border-radius:8px; font-size:12px; font-weight:700; color:var(--text-muted); cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:5px; }
+.view-toggle-btn.active-personal { background:#ede9fe; color:#7c3aed; }
+.view-toggle-btn.active-keluarga { background:#dcfce7; color:#059669; }
+
+/* ── Keluarga tab ── */
+.fam-hero {
+  background: linear-gradient(145deg, #059669 0%, #047857 55%, #065f46 100%);
+  border-radius: var(--radius);
+  padding: 22px 20px 18px;
+  color: #fff;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(5,150,105,.28), 0 2px 8px rgba(5,150,105,.14);
+}
+.fam-hero::before { content:''; position:absolute; right:-20px; top:-20px; width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,.08); }
+.fam-hero-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.09em; opacity:.65; margin-bottom:6px; }
+.fam-hero-val { font-family:'JetBrains Mono',monospace; font-size:30px; font-weight:800; letter-spacing:-.03em; }
+.fam-hero-sub { font-size:12px; opacity:.7; margin-top:5px; }
+.fam-subtabs { display:flex; background:var(--surface); border-radius:10px; padding:3px; gap:2px; margin-bottom:14px; box-shadow:var(--shadow); }
+.fam-subtab { flex:1; padding:8px 4px; border:none; background:none; border-radius:8px; font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; transition:all .15s; }
+.fam-subtab.active { background:#dcfce7; color:#059669; }
+
+/* ── Tabungan tab ── */
+.pocket-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 20px 18px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.pocket-card::before {
+  content: '';
+  position: absolute;
+  right: -16px; top: -16px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  opacity: .07;
+  background: currentColor;
+}
+.pocket-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.pocket-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pocket-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.pocket-sub  { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.pocket-balance { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin-bottom: 14px; }
+.pocket-stats { display: flex; gap: 0; border-top: 1px solid var(--border); padding-top: 14px; }
+.pocket-stat { flex: 1; }
+.pocket-stat + .pocket-stat { border-left: 1px solid var(--border); padding-left: 14px; }
+.pocket-stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+.pocket-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+.pocket-history-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.pocket-history-row:last-child { border-bottom: none; }
+.pocket-hist-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pocket-hist-info { flex: 1; min-width: 0; }
+.pocket-hist-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.pocket-hist-date  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.pocket-hist-amt   { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; }
+
+/* ── Auth Screen ── */
+#authScreen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  font-family: 'Inter', sans-serif;
+}
+#authScreen.hidden { display: none; }
+.auth-logo {
+  width: 64px; height: 64px; border-radius: 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(37,99,235,.3);
+}
+.auth-title { font-size: 22px; font-weight: 800; letter-spacing: -.03em; color: var(--text); margin-bottom: 4px; }
+.auth-sub   { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+.auth-card  {
+  width: 100%; max-width: 360px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(15,23,42,.08);
+}
+.auth-field { margin-bottom: 16px; }
+.auth-field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.auth-field input {
+  width: 100%; padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-family: 'Inter', sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  outline: none; transition: border-color .15s;
+}
+.auth-field input:focus { border-color: var(--blue); }
+.auth-btn {
+  width: 100%; padding: 14px;
+  background: var(--blue);
+  color: #fff; border: none; border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;
+  cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.auth-btn:active { background: var(--blue-mid); }
+.auth-btn:disabled { opacity: .6; cursor: not-allowed; }
+.auth-err  { font-size: 13px; color: var(--red); text-align: center; margin-top: 12px; min-height: 20px; }
+.auth-switch { text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+.auth-switch a { color: var(--blue); font-weight: 600; cursor: pointer; text-decoration: none; }
+
+/* ── Sync indicator ── */
+#syncDot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #16a34a; flex-shrink: 0;
+  transition: background .3s;
+  margin-left: 4px;
+}
+#syncDot.syncing { background: var(--amber); animation: pulse .8s infinite; }
+#syncDot.error   { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+</style>
+</head>
+<body>
+
+<!-- ── Auth Screen ── -->
+<div id="authScreen">
+  <div class="auth-logo">
+    <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+  </div>
+  <div class="auth-title">FamFinance</div>
+  <div class="auth-sub">Keuangan keluarga, bersama.</div>
+
+  <div class="auth-card">
+    <div id="authLoginView">
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="authEmail" placeholder="nama@email.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') Auth.login()">
+      </div>
+      <button class="auth-btn" id="authLoginBtn" onclick="Auth.login()">
+        <span>Masuk</span>
+      </button>
+      <div class="auth-err" id="authErr"></div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <a href="index.html" class="back-btn">
+      <i data-lucide="chevron-left" width="15" height="15"></i>
+      Dashboard
+    </a>
+    <div class="month-nav">
+      <button class="month-btn" id="prevMonth"><i data-lucide="chevron-left" width="16" height="16"></i></button>
+      <span class="month-label" id="monthLabel">—</span>
+      <button class="month-btn" id="nextMonth"><i data-lucide="chevron-right" width="16" height="16"></i></button>
+    </div>
+    <div class="header-right" style="gap:8px;">
+      <span id="syncDot" title="Sync status"></span>
+      <div class="header-avatar" id="headerAvatar" onclick="Auth.showMenu()" style="cursor:pointer;" title="Akun">E</div>
+    </div>
+  </header>
+
+  <main class="app-main" id="appMain"></main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="overview" onclick="App.switchTab('overview',this)">
+      <span class="nav-icon"><i data-lucide="layout-dashboard" width="22" height="22"></i></span>
+      Ringkasan
+    </button>
+    <button class="nav-btn" data-tab="transaksi" onclick="App.switchTab('transaksi',this)">
+      <span class="nav-icon"><i data-lucide="receipt" width="22" height="22"></i></span>
+      Transaksi
+    </button>
+    <button class="nav-btn" data-tab="pemasukan" onclick="App.switchTab('pemasukan',this)">
+      <span class="nav-icon"><i data-lucide="wallet" width="22" height="22"></i></span>
+      Pemasukan
+    </button>
+    <button class="nav-btn" data-tab="tabungan" onclick="App.switchTab('tabungan',this)">
+      <span class="nav-icon"><i data-lucide="piggy-bank" width="22" height="22"></i></span>
+      Tabungan
+    </button>
+    <button class="nav-btn" data-tab="keluarga" onclick="App.switchTab('keluarga',this)">
+      <span class="nav-icon"><i data-lucide="house-heart" width="22" height="22"></i></span>
+      Keluarga
+    </button>
+  </nav>
+</div>
+
+<button class="fab" id="fab" onclick="Modal.openAdd()">
+  <i data-lucide="plus" width="24" height="24" stroke-width="2.5"></i>
+</button>
+
+<div class="modal-overlay" id="modalOverlay" onclick="Modal.closeOnBackdrop(event)">
+  <div class="modal-sheet" id="modalSheet"></div>
+</div>
+
+<script>
+const DEFAULT_CATEGORIES = [
+  { id: 'rumah',    name: 'Alokasi Rumah',   lucide: 'home',            color: '#0d9488', bg: '#ccfbf1', budget: 1125000 },
+  { id: 'makan',   name: 'Makan & Grocery', lucide: 'shopping-basket', color: '#7c6fff', bg: '#ede9fe', budget: 700000  },
+  { id: 'cicilan', name: 'Cicilan',          lucide: 'credit-card',     color: '#2563eb', bg: '#dbeafe', budget: 0       },
+  { id: 'buffer',  name: 'Buffer',           lucide: 'shield',          color: '#9ca3af', bg: '#f3f4f6', budget: 175000  },
+  { id: 'lainnya', name: 'Lainnya',          lucide: 'package',         color: '#6b7280', bg: '#f3f4f6', budget: 0       },
+];
+
+// Icon + color palette for category picker
+const CAT_ICONS = [
+  { lucide:'home', label:'Rumah' },
+  { lucide:'shopping-basket', label:'Belanja' },
+  { lucide:'credit-card', label:'Cicilan' },
+  { lucide:'shield', label:'Buffer' },
+  { lucide:'utensils', label:'Makan' },
+  { lucide:'car', label:'Transport' },
+  { lucide:'heart-pulse', label:'Kesehatan' },
+  { lucide:'graduation-cap', label:'Pendidikan' },
+  { lucide:'smartphone', label:'Gadget' },
+  { lucide:'wifi', label:'Internet' },
+  { lucide:'zap', label:'Listrik' },
+  { lucide:'baby', label:'Anak' },
+  { lucide:'plane', label:'Liburan' },
+  { lucide:'dumbbell', label:'Olahraga' },
+  { lucide:'shirt', label:'Pakaian' },
+  { lucide:'gift', label:'Hadiah' },
+  { lucide:'coffee', label:'Kopi' },
+  { lucide:'tv', label:'Hiburan' },
+  { lucide:'briefcase', label:'Bisnis' },
+  { lucide:'package', label:'Lainnya' },
+];
+const CAT_COLORS = [
+  { color:'#0d9488', bg:'#ccfbf1' },
+  { color:'#7c6fff', bg:'#ede9fe' },
+  { color:'#2563eb', bg:'#dbeafe' },
+  { color:'#9ca3af', bg:'#f3f4f6' },
+  { color:'#d97706', bg:'#fef3c7' },
+  { color:'#dc2626', bg:'#fee2e2' },
+  { color:'#db2777', bg:'#fce7f3' },
+  { color:'#059669', bg:'#dcfce7' },
+  { color:'#ea580c', bg:'#ffedd5' },
+  { color:'#6366f1', bg:'#e0e7ff' },
+];
+
+// Live category list — loads from storage, merges with defaults
+let CATEGORIES = [];
+function getDeletedDefaults(){ try{return JSON.parse(localStorage.getItem('emir_deleted_defaults')||'[]')}catch{return[]} }
+function markDefaultDeleted(id){ const a=getDeletedDefaults(); if(!a.includes(id)){a.push(id);localStorage.setItem('emir_deleted_defaults',JSON.stringify(a));} }
+
+function loadCategories(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('emir_categories') || 'null');
+    if(!saved){ CATEGORIES = [{ id:'lainnya', name:'Lainnya', lucide:'package', color:'#6b7280', bg:'#f3f4f6', budget:0 }]; return; }
+    const merged = [...saved];
+    // Auto-migrate: categories with saving-like names get type:'saving' if not set
+    const savingKeywords = ['tabungan','dana darurat','investasi','saving'];
+    let migrated = false;
+    merged.forEach(c => {
+      if(!c.type && savingKeywords.some(k => c.name.toLowerCase().includes(k))){
+        c.type = 'saving'; migrated = true;
+      }
+    });
+    CATEGORIES = merged;
+    if(migrated) saveCategories();
+  } catch { CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); }
+}
+function saveCategories(){
+  localStorage.setItem('emir_categories', JSON.stringify(CATEGORIES));
+}
+loadCategories();
+
+const MONTHS_ID    = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+// ── Storage ──────────────────────────────────────────────────────
+const DB = {
+  _txKey:'emir_tx', _mKey:'emir_months',
+  getTx(){ try{return JSON.parse(localStorage.getItem(this._txKey)||'[]')}catch{return[]} },
+  saveTx(a){ localStorage.setItem(this._txKey,JSON.stringify(a)) },
+  addTx(t){ const a=this.getTx(); a.push({...t,id:Date.now()+Math.random().toString(36).slice(2)}); this.saveTx(a) },
+  deleteTx(id){ this.saveTx(this.getTx().filter(t=>t.id!==id)) },
+  getTxForMonth(m){ return this.getTx().filter(t=>t.date.startsWith(m)) },
+  getMonth(m){ try{return(JSON.parse(localStorage.getItem(this._mKey)||'{}'))[m]||null}catch{return null} },
+  saveMonth(m,d){ try{const a=JSON.parse(localStorage.getItem(this._mKey)||'{}');a[m]=d;localStorage.setItem(this._mKey,JSON.stringify(a))}catch{} },
+  getTemplates(){ try{return JSON.parse(localStorage.getItem('emir_templates')||'[]')}catch{return[]} },
+  saveTemplates(a){ localStorage.setItem('emir_templates',JSON.stringify(a)) },
+  // ── Multi-income ──
+  getIncomes(m){
+    const md = this.getMonth(m);
+    if(md?.incomes?.length) return md.incomes;
+    // migrate legacy single-income format
+    let allocations = md?.allocations||{};
+    // no fallback to cat.budget — start empty for new users
+    return [{id:'main', label:'Gaji', amount: md?.income||0, allocations}];
+  },
+  saveIncomes(m, incomes){
+    const md = this.getMonth(m)||{};
+    // keep legacy fields in sync so overview tab keeps working
+    const income = incomes.reduce((s,e)=>s+(e.amount||0),0);
+    const allocations = {};
+    incomes.forEach(e=>{
+      Object.entries(e.allocations||{}).forEach(([k,v])=>{ allocations[k]=(allocations[k]||0)+(v||0); });
+    });
+    this.saveMonth(m, {...md, incomes, income, allocations});
+  },
+};
+
+// ── State ────────────────────────────────────────────────────────
+const State = {
+  tab:'overview',
+  view:'personal', // 'personal' | 'keluarga'
+  allocMode:'custom',
+  activeIncomeId: null,
+  month:(()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`})(),
+};
+
+// ── Helpers ──────────────────────────────────────────────────────
+function viewToggleHTML(){
+  const isK = State.view==='keluarga';
+  return `<div class="view-toggle">
+    <button class="view-toggle-btn${!isK?' active-personal':''}" onclick="App.switchView('personal')">
+      ${icon('user',13,'currentColor')} Personal
+    </button>
+    <button class="view-toggle-btn${isK?' active-keluarga':''}" onclick="App.switchView('keluarga')">
+      ${icon('house-heart',13,'currentColor')} Keluarga
+    </button>
+  </div>`;
+}
+
+function fmtRp(n){
+  if(!n&&n!==0)return'—';
+  return'Rp '+Math.abs(n).toLocaleString('id-ID');
+}
+function fmtFull(n){ return'Rp '+Math.abs(n).toLocaleString('id-ID') }
+function mLabel(s){ const[y,m]=s.split('-'); return`${MONTHS_SHORT[+m-1]} ${y}` }
+function mFull(s){ const[y,m]=s.split('-'); return`${MONTHS_ID[+m-1]} ${y}` }
+function prevM(s){ const[y,m]=s.split('-').map(Number),d=new Date(y,m-2,1); return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` }
+function nextM(s){ const[y,m]=s.split('-').map(Number),d=new Date(y,m,1); return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` }
+function fmtDate(s){ const d=new Date(s+'T00:00:00'); return`${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}` }
+function catById(id){ return CATEGORIES.find(c=>c.id===id)||CATEGORIES[4] }
+function getBudget(cat,md){ return md?.allocations?.[cat.id]??cat.budget }
+function spent(txs,id){ return txs.filter(t=>t.category===id).reduce((s,t)=>s+t.amount,0) }
+function today(){ const d=new Date(); return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+function icon(name,size=18,color='currentColor'){
+  return`<i data-lucide="${name}" width="${size}" height="${size}" style="color:${color}"></i>`;
+}
+function catBox(cat,size=40,iconSize=18){
+  return`<div class="cat-box" style="background:${cat.bg};width:${size}px;height:${size}px;">${icon(cat.lucide,iconSize,cat.color)}</div>`;
+}
+function reicons(){ if(window.lucide)lucide.createIcons() }
+
+let _famAllocChart = null;
+function initFamAllocChart(){
+  const canvas = document.getElementById('famAllocChart');
+  if(!canvas) return;
+  if(_famAllocChart){ _famAllocChart.destroy(); _famAllocChart=null; }
+  const cats = FamilyDB.getCategories();
+  const allocs = FamilyDB.getAllocations(State.month);
+  const values = cats.map(c=>allocs[c.id]||0);
+  const hasData = values.some(v=>v>0);
+  const total = values.reduce((a,b)=>a+b,0);
+  _famAllocChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: cats.map(c=>c.name),
+      datasets:[{
+        data: hasData ? values : [1],
+        backgroundColor: hasData ? cats.map(c=>c.color) : ['#e5e7eb'],
+        borderWidth: 3,
+        borderColor: '#ffffff',
+        hoverBorderWidth: 3,
+        hoverOffset: 4,
+      }]
+    },
+    options:{
+      cutout: '68%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          enabled: hasData,
+          callbacks:{
+            label: ctx => ` ${fmtRp(ctx.raw)}  (${Math.round(ctx.raw/values.reduce((a,b)=>a+b,0)*100)}%)`
+          },
+          backgroundColor:'#1f2937',
+          padding:10,
+          cornerRadius:8,
+          titleFont:{ family:'Inter', size:12 },
+          bodyFont:{ family:'JetBrains Mono', size:13 },
+        }
+      },
+      animation:{ duration: 400, easing:'easeInOutQuart' }
+    }
+  });
+  const center = document.getElementById('famChartCenter');
+  if(center) center.querySelector('div:last-child').textContent = fmtRp(total);
+}
+function updateFamAllocChart(){
+  if(!_famAllocChart) return;
+  const cats = FamilyDB.getCategories();
+  const values = cats.map(c=>{
+    const f = document.querySelector(`.alloc-field[data-famcat="${c.id}"]`);
+    return parseInt(f?.value||0)||0;
+  });
+  const total = values.reduce((a,b)=>a+b,0);
+  const hasData = values.some(v=>v>0);
+  _famAllocChart.data.labels = cats.map(c=>c.name);
+  _famAllocChart.data.datasets[0].data = hasData ? values : [1];
+  _famAllocChart.data.datasets[0].backgroundColor = hasData ? cats.map(c=>c.color) : ['#e5e7eb'];
+  _famAllocChart.options.plugins.tooltip.enabled = hasData;
+  _famAllocChart.update('active');
+  const center = document.getElementById('famChartCenter');
+  if(center) center.querySelector('div:last-child').textContent = fmtRp(total);
+  // sync legend dots
+  cats.forEach(c=>{
+    const dot = document.querySelector(`.fam-legend-dot[data-cat="${c.id}"]`);
+    if(dot) dot.parentElement.style.display = values[cats.indexOf(c)]>0?'flex':'none';
+  });
+}
+
+let _allocChart = null;
+function initAllocChart(){
+  const canvas = document.getElementById('allocChart');
+  if(!canvas) return;
+  if(_allocChart){ _allocChart.destroy(); _allocChart=null; }
+  const cats = CATEGORIES.filter(c=>c.id!=='lainnya');
+  // use merged allocations from all income sources
+  const incomes = DB.getIncomes(State.month);
+  const mergedAlloc = {};
+  incomes.forEach(e=>{ Object.entries(e.allocations||{}).forEach(([k,v])=>{ mergedAlloc[k]=(mergedAlloc[k]||0)+(v||0); }); });
+  const values = cats.map(c=>mergedAlloc[c.id]||0);
+  const hasData = values.some(v=>v>0);
+  _allocChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: cats.map(c=>c.name),
+      datasets:[{
+        data: hasData ? values : [1],
+        backgroundColor: hasData ? cats.map(c=>c.color) : ['#e5e7eb'],
+        borderWidth: 3,
+        borderColor: '#ffffff',
+        hoverBorderWidth: 3,
+        hoverOffset: 4,
+      }]
+    },
+    options:{
+      cutout: '68%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          enabled: hasData,
+          callbacks:{
+            label: ctx => ` ${fmtRp(ctx.raw)}  (${Math.round(ctx.raw/values.reduce((a,b)=>a+b,0)*100)}%)`
+          },
+          backgroundColor:'#1f2937',
+          padding:10,
+          cornerRadius:8,
+          titleFont:{ family:'Inter', size:12 },
+          bodyFont:{ family:'JetBrains Mono', size:13 },
+        }
+      },
+      animation:{ duration: 400, easing:'easeInOutQuart' }
+    }
+  });
+}
+
+function updateAllocChart(){
+  if(!_allocChart) return;
+  const cats = CATEGORIES.filter(c=>c.id!=='lainnya');
+  const values = cats.map(c=>{
+    const f = document.querySelector(`.alloc-field[data-cat="${c.id}"]`);
+    return parseInt(f?.value||0)||0;
+  });
+  _allocChart.data.labels = cats.map(c=>c.name);
+  const total = values.reduce((a,b)=>a+b,0);
+  const hasData = values.some(v=>v>0);
+  _allocChart.data.datasets[0].data = hasData ? values : [1];
+  _allocChart.data.datasets[0].backgroundColor = hasData ? cats.map(c=>c.color) : ['#e5e7eb'];
+  _allocChart.options.plugins.tooltip.enabled = hasData;
+  _allocChart.update('active');
+  // update center label
+  const center = document.getElementById('chartCenter');
+  if(center){
+    center.querySelector('div:last-child').textContent = fmtRp(total);
+  }
+}
+
+// ── App ──────────────────────────────────────────────────────────
+const App = {
+  init(){
+    document.getElementById('monthLabel').textContent=mLabel(State.month);
+    document.getElementById('prevMonth').onclick=()=>this.changeMonth(-1);
+    document.getElementById('nextMonth').onclick=()=>this.changeMonth(1);
+    this.render();
+  },
+  changeMonth(dir){
+    State.month=dir<0?prevM(State.month):nextM(State.month);
+    document.getElementById('monthLabel').textContent=mLabel(State.month);
+    this.render();
+  },
+  _updateFab(){
+    const fab = document.getElementById('fab');
+    const hasFab = State.tab==='overview' || State.tab==='transaksi';
+    fab.style.display = hasFab ? 'flex' : 'none';
+    document.getElementById('appMain').style.paddingBottom = hasFab ? 'calc(var(--nav-h) + 72px)' : '20px';
+    if(hasFab){
+      fab.onclick = State.view==='keluarga' ? ()=>FamilyApp.openAddTx() : ()=>Modal.openAdd();
+    }
+  },
+  switchTab(tab,btn){
+    State.tab=tab;
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    this._updateFab();
+    this.render();
+  },
+  switchView(v){
+    State.view=v;
+    this._updateFab();
+    this.render();
+  },
+  render(){
+    const txs=DB.getTxForMonth(State.month), md=DB.getMonth(State.month);
+    const main=document.getElementById('appMain');
+    if(State.tab==='overview') main.innerHTML=Render.overview(txs,md);
+    else if(State.tab==='transaksi') main.innerHTML=Render.transaksi(txs,md);
+    else if(State.tab==='tabungan') main.innerHTML=Render.tabungan();
+    else if(State.tab==='keluarga'){
+      main.innerHTML=FamilyApp.renderAlokasi();
+    }
+    else main.innerHTML=Render.pemasukan(md);
+    reicons();
+    if(State.tab==='pemasukan'){
+      requestAnimationFrame(initAllocChart);
+      this._attachSwipe();
+    }
+    if(State.tab==='keluarga'){
+      requestAnimationFrame(initFamAllocChart);
+    }
+  },
+  _attachSwipe(){
+    const hero = document.querySelector('.income-hero');
+    if(!hero) return;
+    let sx=0, sy=0;
+    const onStart = e => { sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
+    const onMove  = e => {
+      const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
+      if(dx>dy && dx>8) e.preventDefault(); // clearly horizontal — block scroll
+    };
+    const onEnd = e => {
+      const dx=e.changedTouches[0].clientX-sx;
+      if(Math.abs(dx)<30) return;
+      const incomes=DB.getIncomes(State.month);
+      const idx=incomes.findIndex(i=>i.id===State.activeIncomeId);
+      if(dx>0){ if(idx>0) this.selectIncome(incomes[idx-1].id,'right'); else if(incomes.length<2) Modal.openAddIncome(); }
+      else { if(idx<incomes.length-1) this.selectIncome(incomes[idx+1].id,'left'); }
+    };
+    hero.addEventListener('touchstart', onStart, {passive:true});
+    hero.addEventListener('touchmove',  onMove,  {passive:false}); // must be non-passive to preventDefault
+    hero.addEventListener('touchend',   onEnd,   {passive:true});
+    // mouse drag for desktop
+    hero.addEventListener('mousedown', e=>{ this._swX=e.clientX; });
+    hero.addEventListener('mouseup',   e=>{
+      const dx=e.clientX-this._swX;
+      if(Math.abs(dx)<30) return;
+      const incomes=DB.getIncomes(State.month);
+      const idx=incomes.findIndex(i=>i.id===State.activeIncomeId);
+      if(dx>0){ if(idx>0) this.selectIncome(incomes[idx-1].id,'right'); else if(incomes.length<2) Modal.openAddIncome(); }
+      else { if(idx<incomes.length-1) this.selectIncome(incomes[idx+1].id,'left'); }
+    });
+  },
+  deleteTx(id){
+    if(!confirm('Hapus transaksi ini?'))return;
+    DB.deleteTx(id); this.render();
+  },
+  savePemasukan(){
+    const allocations={};
+    document.querySelectorAll('.alloc-field').forEach(f=>{ allocations[f.dataset.cat]=parseInt(f.value||'0') });
+    const md=DB.getMonth(State.month)||{};
+    DB.saveMonth(State.month,{...md,allocations});
+    const btn=document.querySelector('.save-alloc-btn');
+    if(btn){btn.textContent='Tersimpan ✓'; btn.style.background='#16a34a';}
+    setTimeout(()=>this.render(),900);
+  },
+  deleteCategory(id){
+    loadCategories();
+    if(CATEGORIES.length<=1){alert('Minimal satu kategori.');return;}
+    if(!confirm('Hapus kategori ini?'))return;
+    // if it's a default category, remember the deletion so loadCategories won't restore it
+    if(DEFAULT_CATEGORIES.find(d=>d.id===id)) markDefaultDeleted(id);
+    CATEGORIES = CATEGORIES.filter(c=>c.id!==id);
+    saveCategories(); this.render();
+  },
+  editCategory(id, data){
+    loadCategories();
+    const idx = CATEGORIES.findIndex(c=>c.id===id);
+    if(idx<0)return;
+    const merged = { ...CATEGORIES[idx], ...data };
+    if(data.type === undefined) delete merged.type;
+    CATEGORIES[idx] = merged;
+    saveCategories(); Modal.close(); this.render();
+  },
+  addCategory(data){
+    loadCategories(); // reload from storage so we don't overwrite concurrently added categories
+    const id = 'cat_'+Date.now();
+    const idx = CATEGORIES.findIndex(c=>c.id==='lainnya');
+    const newCat = { id, ...data, budget: 0 };
+    if(idx>=0) CATEGORIES.splice(idx,0,newCat);
+    else CATEGORIES.push(newCat);
+    saveCategories(); Modal.close(); this.render();
+  },
+  setAllocMode(mode){
+    State.allocMode=mode; this.render();
+    if(mode==='pemasukan') requestAnimationFrame(initAllocChart);
+  },
+  applyTemplate(idx){
+    const tpl=DB.getTemplates()[idx]; if(!tpl)return;
+    const md=DB.getMonth(State.month)||{};
+    DB.saveMonth(State.month,{...md,income:md.income||0,allocations:tpl.allocations});
+    State.allocMode='custom'; this.render();
+  },
+  deleteTemplate(idx){
+    if(!confirm('Hapus template ini?'))return;
+    const tpls=DB.getTemplates(); tpls.splice(idx,1); DB.saveTemplates(tpls); this.render();
+  },
+  saveTemplateFromCurrent(name){
+    const allocations={};
+    document.querySelectorAll('.alloc-field').forEach(f=>{ allocations[f.dataset.cat]=parseInt(f.value||'0') });
+    const tpls=DB.getTemplates(); tpls.push({name,allocations}); DB.saveTemplates(tpls);
+    Modal.close(); this.render();
+  },
+  selectIncome(id, dir){
+    State.activeIncomeId = id;
+    this.render();
+    if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart);
+    if(dir){
+      requestAnimationFrame(()=>{
+        const el = document.querySelector('.income-hero');
+        if(!el) return;
+        el.classList.remove('slide-left','slide-right');
+        void el.offsetWidth; // force reflow
+        el.classList.add('slide-'+dir);
+        setTimeout(()=>el.classList.remove('slide-'+dir), 350);
+      });
+    }
+  },
+  _swX: 0,
+  _swipeStart(e){ this._swX = e.touches[0].clientX; },
+  _swipeEnd(e){
+    const dx = e.changedTouches[0].clientX - this._swX;
+    if(Math.abs(dx) < 40) return;
+    const incomes = DB.getIncomes(State.month);
+    const idx = incomes.findIndex(e=>e.id===State.activeIncomeId);
+    if(dx > 0){ // swipe right → previous card OR add
+      if(idx > 0){ this.selectIncome(incomes[idx-1].id, 'right'); }
+      else if(incomes.length < 2){ Modal.openAddIncome(); }
+    } else { // swipe left → next card
+      if(idx < incomes.length-1){ this.selectIncome(incomes[idx+1].id, 'left'); }
+    }
+  },
+  // ── Multi-income ──
+  addIncome(label, amount, payDay=1){
+    const incomes = DB.getIncomes(State.month);
+    if(incomes.length >= 2){ alert('Maksimal 2 sumber pemasukan.'); return; }
+    const id = 'inc_'+Date.now();
+    incomes.push({id, label, amount, payDay, allocations:{}});
+    DB.saveIncomes(State.month, incomes);
+    State.activeIncomeId = id;
+    Modal.close();
+    this.render();
+    if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart);
+  },
+  deleteIncome(id){
+    const incomes = DB.getIncomes(State.month);
+    if(incomes.length<=1){ alert('Minimal satu sumber pemasukan.'); return; }
+    if(!confirm('Hapus sumber pemasukan ini?')) return;
+    DB.saveIncomes(State.month, incomes.filter(e=>e.id!==id));
+    this.render();
+  },
+  editIncome(id, label, amount, payDay=1){
+    const incomes = DB.getIncomes(State.month);
+    const idx = incomes.findIndex(e=>e.id===id);
+    if(idx<0) return;
+    incomes[idx] = {...incomes[idx], label, amount, payDay};
+    DB.saveIncomes(State.month, incomes);
+    Modal.close(); this.render();
+  },
+  saveIncomeAllocations(id){
+    const incomes = DB.getIncomes(State.month);
+    const idx = incomes.findIndex(e=>e.id===id);
+    if(idx<0) return;
+    const allocations={};
+    document.querySelectorAll('.alloc-field').forEach(f=>{ allocations[f.dataset.cat]=parseInt(f.value||'0')||0; });
+    incomes[idx].allocations = allocations;
+    DB.saveIncomes(State.month, incomes);
+    const btn=document.querySelector('.save-alloc-btn');
+    if(btn){btn.textContent='Tersimpan ✓';btn.style.background='#16a34a';}
+    setTimeout(()=>{ this.render(); if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart); },900);
+  },
+  removeAllocRow(incomeId, catId){
+    const incomes = DB.getIncomes(State.month);
+    const inc = incomes.find(e=>e.id===incomeId);
+    if(!inc) return;
+    delete inc.allocations[catId];
+    DB.saveIncomes(State.month, incomes);
+    this.render(); if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart);
+  },
+  applyTemplateToIncome(id, tplIdx){
+    const tpl = DB.getTemplates()[tplIdx]; if(!tpl) return;
+    const incomes = DB.getIncomes(State.month);
+    const idx = incomes.findIndex(e=>e.id===id);
+    if(idx<0) return;
+    incomes[idx].allocations = {...tpl.allocations};
+    DB.saveIncomes(State.month, incomes);
+    State.activeIncomeId = id;
+    Modal.close(); this.render();
+    if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart);
+  },
+};
+
+// ── Render ───────────────────────────────────────────────────────
+const Render = {
+  overview(txs,md){
+    if(State.view==='keluarga') return viewToggleHTML() + FamilyApp.renderRingkasan();
+    let h = viewToggleHTML();
+    const income=md?.income||0;
+    const savingCatIds=new Set(CATEGORIES.filter(c=>c.type==='saving').map(c=>c.id));
+    const spendTxs=txs.filter(t=>!savingCatIds.has(t.category));
+    const savingTxs=txs.filter(t=>savingCatIds.has(t.category));
+    const totalSpent=spendTxs.reduce((s,t)=>s+t.amount,0);
+    const totalSaved=savingTxs.reduce((s,t)=>s+t.amount,0);
+    const totalBudget=CATEGORIES.filter(c=>c.type!=='saving').reduce((s,c)=>s+getBudget(c,md),0);
+    // alokasi ke tabungan bulan ini (dari income sources)
+    const incomesSrc=DB.getIncomes(State.month);
+    const totalAllocSaving=incomesSrc.filter(inc=>{ const pd=(State.month+'-'+String(inc.payDay||1).padStart(2,'0')); return pd<=today(); }).reduce((s,inc)=>s+Object.entries(inc.allocations||{}).filter(([k])=>savingCatIds.has(k)).reduce((ss,[,v])=>ss+(v||0),0),0);
+    const sisa=income?income-totalSpent-totalAllocSaving:totalBudget-totalSpent;
+    const totalUsed=totalSpent+totalAllocSaving;
+    const pct=income>0?Math.min(totalUsed/income*100,100):totalBudget>0?Math.min(totalSpent/totalBudget*100,100):0;
+    const sisaColor=sisa<0?'#fca5a5':sisa<(income||totalBudget)*.15?'#fde68a':'#ffffff';
+
+    h+=`
+    <div class="hero-card">
+      <div class="hero-label">Sisa Budget</div>
+      <div class="hero-value" style="color:${sisaColor}">${fmtRp(Math.abs(sisa))}${sisa<0?' −':''}</div>
+      <div class="hero-sub">${sisa<0?'Melebihi budget':income?'dari pemasukan':'dari total budget'} · ${mFull(State.month)}</div>
+      <div class="hero-progress"><div class="hero-progress-fill" style="width:${pct}%"></div></div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hs-label">Pengeluaran</div>
+          <div class="hs-val">${fmtRp(totalSpent)}</div>
+        </div>
+        ${totalAllocSaving?`<div class="hero-stat">
+          <div class="hs-label">Tabungan</div>
+          <div class="hs-val" style="color:#86efac;">${fmtRp(totalAllocSaving)}</div>
+        </div>`:`<div class="hero-stat">
+          <div class="hs-label">${income?'Pemasukan':'Budget'}</div>
+          <div class="hs-val">${fmtRp(income||totalBudget)}</div>
+        </div>`}
+      </div>
+    </div>`;
+
+    // Budget section — flat, no stacked card (exclude saving cats)
+    const budgetCats = CATEGORIES.filter(cat=>cat.type!=='saving').filter(cat=>{ const b=getBudget(cat,md),s=spent(spendTxs,cat.id); return b>0||s>0; });
+    if(budgetCats.length){
+      h+=`<div class="section-flat">
+        <div class="section-header">
+          <span class="card-title">Budget vs Aktual</span>
+        </div>
+        <div style="padding:0 18px 16px;">`;
+      budgetCats.forEach(cat=>{
+        const b=getBudget(cat,md), s=spent(spendTxs,cat.id);
+        const pct=b>0?Math.min(s/b*100,100):0, over=s>b&&b>0;
+        h+=`<div class="budget-row">
+          <div class="budget-top">
+            ${catBox(cat,38,16)}
+            <div class="budget-info">
+              <div class="budget-name">${cat.name}</div>
+              <div class="budget-nums ${over?'over-text':''}">
+                <span class="spent">${fmtFull(s)}</span>&nbsp;<span style="color:var(--text-faint)">/</span>&nbsp;${fmtRp(b)}
+              </div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${over?'var(--red)':'var(--text-muted)'};">${b>0?Math.round(s/b*100):0}%</div>
+          </div>
+          <div class="budget-track">
+            <div class="budget-fill" style="width:${pct}%;background:${over?'var(--red)':cat.color}"></div>
+          </div>
+        </div>`;
+      });
+      h+=`</div></div>`;
+    }
+
+    // Recent transactions — flat
+    const recent=[...txs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+    h+=`<div class="section-flat">
+      <div class="section-header">
+        <span class="card-title">Transaksi Terakhir</span>
+        ${recent.length?`<button onclick="App.switchTab('transaksi',document.querySelector('[data-tab=transaksi]'))" style="background:none;border:none;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">Lihat semua</button>`:''}
+      </div>
+      <div style="padding:0 18px;">`;
+    if(!recent.length){
+      h+=`<div style="text-align:center;padding:20px 0 20px;color:var(--text-faint);font-size:13px;">Belum ada transaksi bulan ini</div>`;
+    } else {
+      recent.forEach(tx=>{ h+=this._txRow(tx); });
+    }
+    h+=`</div></div>`;
+    return h;
+  },
+
+  transaksi(txs,md){
+    if(State.view==='keluarga') return viewToggleHTML() + FamilyApp.renderTransaksi();
+    const savingCatIds=new Set(CATEGORIES.filter(c=>c.type==='saving').map(c=>c.id));
+    const totalSpent=txs.filter(t=>!savingCatIds.has(t.category)).reduce((s,t)=>s+t.amount,0);
+    const totalSaved=txs.filter(t=>savingCatIds.has(t.category)).reduce((s,t)=>s+t.amount,0);
+    const toggle=viewToggleHTML();
+
+    if(!txs.length){
+      return toggle+`<div class="empty">
+        ${icon('receipt',40,'var(--text-faint)')}
+        <div class="empty-label">Belum ada transaksi</div>
+        <div class="empty-sub">Tap + untuk tambah transaksi baru</div>
+      </div>`;
+    }
+
+    // Inline summary bar
+    let h=toggle+`<div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:4px;">Pengeluaran</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:var(--red);">${fmtRp(totalSpent)}</div>
+      </div>
+      ${totalSaved?`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:4px;">Tabungan</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:#16a34a;">${fmtRp(totalSaved)}</div>
+      </div>`:`<div style="flex:1;background:var(--surface);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:4px;">Transaksi</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;">${txs.length}<span style="font-size:12px;font-weight:600;color:var(--text-muted);">×</span></div>
+      </div>`}
+    </div>`;
+
+    const groups={};
+    [...txs].sort((a,b)=>b.date.localeCompare(a.date)).forEach(tx=>{
+      if(!groups[tx.date])groups[tx.date]=[];
+      groups[tx.date].push(tx);
+    });
+
+    Object.entries(groups).forEach(([date,items])=>{
+      const dayTotal=items.reduce((s,t)=>s+t.amount,0);
+      h+=`<div class="tx-group">
+        <div class="tx-group-header">
+          <span class="tx-group-date">${fmtDate(date)}</span>
+          <span class="tx-group-total">${fmtFull(dayTotal)}</span>
+        </div>
+        <div class="tx-group-items">`;
+      items.forEach(tx=>{ h+=this._txRow(tx,true); });
+      h+=`</div></div>`;
+    });
+    return h;
+  },
+
+  pemasukan(md){
+    const incomes = DB.getIncomes(State.month);
+    const totalIncome = incomes.reduce((s,e)=>s+(e.amount||0),0);
+    const mergedAlloc = {};
+    incomes.forEach(e=>{ Object.entries(e.allocations||{}).forEach(([k,v])=>{ mergedAlloc[k]=(mergedAlloc[k]||0)+(v||0); }); });
+    const totalAlloc = Object.values(mergedAlloc).reduce((s,v)=>s+v,0);
+    const diff = totalIncome - totalAlloc;
+    const diffLabel = diff<0?`Lebih ${fmtRp(Math.abs(diff))}`:diff>0?`Sisa ${fmtRp(diff)}`:'Pas ✓';
+
+    // resolve active income
+    const activeId = (State.activeIncomeId && incomes.find(e=>e.id===State.activeIncomeId))
+      ? State.activeIncomeId : incomes[0]?.id;
+    if(State.activeIncomeId !== activeId) State.activeIncomeId = activeId;
+    const active = incomes.find(e=>e.id===activeId)||incomes[0];
+    const activeAlloc = active ? Object.values(active.allocations||{}).reduce((s,v)=>s+v,0) : 0;
+    const activeDiff = (active?.amount||0) - activeAlloc;
+
+    // ── Swipeable income hero card ──
+    const activeIdx = incomes.findIndex(e=>e.id===activeId);
+    const eAlloc = Object.values(active?.allocations||{}).reduce((s,v)=>s+v,0);
+    const eRem = (active?.amount||0) - eAlloc;
+    const ePct = active?.amount>0 ? Math.min(eAlloc/active.amount*100,100) : 0;
+    const eRemTxt = active?.amount>0 ? (eRem>0?`Sisa ${fmtRp(eRem)}`:(eRem<0?`Over ${fmtRp(Math.abs(eRem))}`:'Penuh ✓')) : 'Alokasi belum diset';
+    const canAddMore = incomes.length < 2;
+
+    let h=`
+    <div class="income-hero-sticky">
+    <div class="income-hero" data-color="${activeIdx}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+        <div class="income-hero-label">${active?.label||'Pemasukan'} · ${mFull(State.month)}</div>
+        <div style="display:flex;gap:4px;">
+          <button onclick="event.stopPropagation();Modal.openEditIncome('${activeId}')"
+            style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:5px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+            ${icon('pencil',12,'currentColor')} Edit
+          </button>
+          ${incomes.length>1?`<button onclick="event.stopPropagation();App.deleteIncome('${activeId}')"
+            style="background:rgba(255,255,255,.12);border:none;border-radius:8px;padding:5px 8px;color:rgba(255,255,255,.8);cursor:pointer;">
+            ${icon('trash-2',13,'currentColor')}
+          </button>`:''}
+        </div>
+      </div>
+      <div class="income-hero-val">${active?.amount?fmtFull(active.amount):'Tap Edit untuk set'}</div>
+      <div class="income-hero-sub">${eRemTxt}${totalIncome!==active?.amount?` · Total ${fmtRp(totalIncome)}`:''}</div>
+      <div class="income-hero-progress"><div class="income-hero-progress-fill" style="width:${ePct}%"></div></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:-4px 0 12px;">
+      ${incomes.map((e,i)=>`<div class="income-dot${e.id===activeId?' active':''}" onclick="App.selectIncome('${e.id}','${i>activeIdx?'left':'right'}')" style="${e.id===activeId?(i===0?'background:#2563eb;':'background:#7c3aed;'):''}"></div>`).join('')}
+      ${canAddMore?`
+        <button onclick="Modal.openAddIncome()"
+          style="display:flex;align-items:center;gap:5px;background:var(--blue-light);color:var(--blue);border:none;border-radius:99px;padding:5px 12px 5px 8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">
+          ${icon('plus',13,'var(--blue)')} Tambah pemasukan lain
+        </button>`:''}
+    </div>
+    </div>
+
+    <!-- ── Pie chart ── -->
+    <div class="section-flat" style="margin-bottom:10px;">
+      <div style="padding:18px 18px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-.02em;">Komposisi Alokasi</div>
+          ${incomes.length>1?`<div style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:99px;padding:3px 10px;">Gabungan ${incomes.length} sumber</div>`:''}
+        </div>
+        <div style="position:relative;width:220px;height:220px;margin:0 auto 14px;">
+          <canvas id="allocChart"></canvas>
+          <div id="chartCenter" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);">Total</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text);text-align:center;line-height:1.3;">${fmtRp(totalAlloc)}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;">
+          ${CATEGORIES.filter(c=>c.id!=='lainnya'&&(mergedAlloc[c.id]||0)>0).map(c=>`
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted);">
+              <span style="width:7px;height:7px;border-radius:50%;background:${c.color};flex-shrink:0;display:inline-block;"></span>
+              ${c.name}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Alloc for active income ── -->
+    <div class="section-flat">
+      <div class="section-header" style="padding-bottom:4px;">
+        <div>
+          <span class="card-title">Alokasi · ${active?.label||''}</span>
+          ${active?.amount?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${fmtFull(active.amount)} · ${activeDiff<0?'<span style="color:var(--red)">Over '+fmtRp(Math.abs(activeDiff))+'</span>':activeDiff===0&&activeAlloc>0?'<span style="color:var(--green)">Penuh ✓</span>':'Sisa '+fmtRp(activeDiff)}</div>`:''}
+        </div>
+        ${DB.getTemplates().length?`<button onclick="Modal.openPickTemplate('${activeId}')"
+          style="flex-shrink:0;background:var(--blue-light);color:var(--blue);border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;">
+          ${icon('bookmark',13,'currentColor')} Template
+        </button>`:''}
+      </div>
+      <div style="padding:0 18px 8px;">`;
+
+    // only show cats explicitly included in this income's allocations
+    const includedCats = CATEGORIES.filter(c => c.id in (active?.allocations||{}));
+    const excludedCats = CATEGORIES.filter(c => !(c.id in (active?.allocations||{})));
+
+    if(!includedCats.length){
+      h+=`<div style="text-align:center;padding:20px 0 12px;color:var(--text-faint);font-size:13px;">Belum ada pos alokasi.<br>Tap + untuk tambah.</div>`;
+    }
+    includedCats.forEach(cat=>{
+      const val = active.allocations[cat.id]||0;
+      h+=`<div class="alloc-row">
+        ${catBox(cat,36,15)}
+        <span class="alloc-name">${cat.name}</span>
+        <input class="alloc-field" data-cat="${cat.id}" type="number" inputmode="numeric"
+          value="${val||''}" placeholder="0"
+          oninput="Render._liveAllocTotal(${active?.amount||0})">
+        <button class="alloc-act alloc-del" onclick="App.removeAllocRow('${activeId}','${cat.id}')" title="Hapus dari sumber ini">${icon('x',13,'currentColor')}</button>
+      </div>`;
+    });
+
+    h+=`<button class="add-cat-btn" onclick="Modal.openAddAllocRow('${activeId}')">
+        ${icon('plus-circle',16,'currentColor')} Tambah Pos Alokasi
+      </button>
+      <div class="alloc-total">
+        <span>Total Alokasi</span>
+        <span class="alloc-total-val ${activeDiff<0?'over-budget':activeDiff===0&&activeAlloc>0?'':''}" id="allocTotal">${fmtRp(activeAlloc)}</span>
+      </div>
+    </div>
+    <div style="padding:0 18px 18px;display:flex;gap:8px;">
+      <button class="btn btn-primary save-alloc-btn" style="margin-top:0;" onclick="App.saveIncomeAllocations('${activeId}')">Simpan Alokasi</button>
+      <button onclick="Modal._saveTemplateFromModal()" title="Simpan sebagai template"
+        style="flex-shrink:0;margin-top:0;border:none;border-radius:var(--radius-sm);padding:0 16px;background:var(--blue-light);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        ${icon('bookmark',15,'currentColor')}
+      </button>
+    </div>
+    </div>`;
+
+    return h;
+  },
+  _liveAllocTotal(incomeAmount){
+    let total=0;
+    document.querySelectorAll('.alloc-field').forEach(f=>total+=parseInt(f.value||0)||0);
+    const el=document.getElementById('allocTotal');
+    if(!el) return;
+    el.textContent=fmtRp(total);
+    const diff=incomeAmount-total;
+    el.className='alloc-total-val '+(diff<0?'over-budget':diff===0&&total>0?'':'');
+  },
+
+  _txRow(tx, inGroup=false){
+    const cat=catById(tx.category);
+    const isSaving=cat.type==='saving';
+    return`<div class="tx-row">
+      ${catBox(cat,40,16)}
+      <div class="tx-info">
+        <div class="tx-note">${tx.note||cat.name}${isSaving?` <span style="font-size:10px;font-weight:700;color:#16a34a;background:#dcfce7;border-radius:99px;padding:1px 7px;vertical-align:middle;">Tabungan</span>`:''}</div>
+        <div class="tx-meta">${inGroup?cat.name:fmtDate(tx.date)+' · '+cat.name}</div>
+      </div>
+      <div class="tx-amount" style="${isSaving?'color:#16a34a':''}">${fmtFull(tx.amount)}</div>
+      <button class="tx-del" onclick="App.deleteTx('${tx.id}')">${icon('trash-2',14,'currentColor')}</button>
+    </div>`;
+  },
+
+  tabungan(){
+    if(State.view==='keluarga') return viewToggleHTML() + FamilyApp.renderTabungan();
+    const toggle = viewToggleHTML();
+    const savingCats = CATEGORIES.filter(c => c.type === 'saving');
+    if(!savingCats.length){
+      return toggle + `<div class="empty">
+        ${icon('piggy-bank',40,'var(--text-faint)')}
+        <div class="empty-label">Belum ada kategori tabungan</div>
+        <div class="empty-sub">Tandai kategori sebagai "Tabungan/Investasi" saat membuat kategori baru.</div>
+      </div>`;
+    }
+
+    // Build pocket data from all months
+    const allMonthsData = (() => { try { return JSON.parse(localStorage.getItem('emir_months')||'{}'); } catch { return {}; } })();
+    const allMonths = Object.keys(allMonthsData).sort();
+
+    let h = toggle;
+    savingCats.forEach(cat => {
+      let totalIn = 0, totalOut = 0;
+      const history = [];
+
+      allMonths.forEach(m => {
+        // Top-ups: allocations from each income source (only if payDay has passed)
+        const incomes = DB.getIncomes(m);
+        incomes.forEach(inc => {
+          const payDay = inc.payDay || 1;
+          const payDate = m + '-' + String(payDay).padStart(2,'0');
+          if(payDate > today()) return; // not realized yet
+          const alloc = (inc.allocations||{})[cat.id] || 0;
+          if(alloc > 0){
+            totalIn += alloc;
+            history.push({ date: payDate, label: `Alokasi · ${inc.label}`, amount: alloc, type: 'in' });
+          }
+        });
+        // Withdrawals: transactions in this category
+        const txs = DB.getTxForMonth(m).filter(t=>t.category===cat.id);
+        txs.forEach(tx => {
+          totalOut += tx.amount;
+          history.push({ date: tx.date, label: tx.note||'Penarikan', amount: tx.amount, type: 'out' });
+        });
+      });
+
+      const balance = totalIn - totalOut;
+      history.sort((a,b)=>b.date.localeCompare(a.date));
+      const recent = history.slice(0,5);
+
+      h += `<div class="pocket-card">
+        <div class="pocket-header">
+          <div class="pocket-icon" style="background:${cat.bg};">${icon(cat.lucide,20,cat.color)}</div>
+          <div>
+            <div class="pocket-name">${cat.name}</div>
+            <div class="pocket-sub">Saldo berjalan</div>
+          </div>
+        </div>
+        <div class="pocket-balance" style="color:${balance<0?'var(--red)':cat.color}">${fmtRp(Math.abs(balance))}${balance<0?' <span style="font-size:14px;font-weight:600;color:var(--red)">defisit</span>':''}</div>
+        <div class="pocket-stats">
+          <div class="pocket-stat">
+            <div class="pocket-stat-label">Total Masuk</div>
+            <div class="pocket-stat-val" style="color:#16a34a;">${fmtRp(totalIn)}</div>
+          </div>
+          <div class="pocket-stat">
+            <div class="pocket-stat-label">Total Keluar</div>
+            <div class="pocket-stat-val" style="color:var(--red);">${fmtRp(totalOut)}</div>
+          </div>
+        </div>
+        ${recent.length?`<div style="margin-top:16px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">Riwayat</div>
+          ${recent.map(h=>`<div class="pocket-history-row">
+            <div class="pocket-hist-dot" style="background:${h.type==='in'?'#16a34a':'var(--red)'}"></div>
+            <div class="pocket-hist-info">
+              <div class="pocket-hist-label">${h.label}</div>
+              <div class="pocket-hist-date">${fmtDate(h.date)}</div>
+            </div>
+            <div class="pocket-hist-amt" style="color:${h.type==='in'?'#16a34a':'var(--red)'}">
+              ${h.type==='in'?'+':'−'}${fmtRp(h.amount)}
+            </div>
+          </div>`).join('')}
+        </div>`:''}
+      </div>`;
+    });
+
+    return h;
+  },
+};
+
+// ── Modal ────────────────────────────────────────────────────────
+const Modal = {
+  open(html){
+    document.getElementById('modalSheet').innerHTML=html;
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow='hidden';
+    reicons();
+    setTimeout(()=>{
+      const inp=document.getElementById('modalSheet').querySelector('input');
+      if(inp) inp.focus({preventScroll:true});
+    },350);
+  },
+  close(){
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow='';
+  },
+  closeOnBackdrop(e){ if(e.target===document.getElementById('modalOverlay'))this.close() },
+
+  openAdd(){
+    const spendCats = CATEGORIES.filter(c=>c.type!=='saving');
+    const saveCats  = CATEGORIES.filter(c=>c.type==='saving');
+    const catOpts = [
+      ...spendCats.map(c=>`<button type="button" class="cat-option" data-cat="${c.id}" onclick="Modal._selectCat('${c.id}')">${icon(c.lucide,16,c.color)}${c.name}</button>`),
+      ...(saveCats.length?[`<div style="width:100%;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:8px 2px 4px;">Tarik dari Tabungan</div>`,
+        ...saveCats.map(c=>`<button type="button" class="cat-option" data-cat="${c.id}" onclick="Modal._selectCat('${c.id}')" style="border-color:#16a34a22;">${icon(c.lucide,16,c.color)}${c.name}</button>`)]:[])
+    ].join('');
+
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Tambah Transaksi</div>
+      <form onsubmit="Modal.submitAdd(event)">
+        <div class="form-group">
+          <label class="form-label">Nominal</label>
+          <div class="form-amount-wrap">
+            <span class="form-amount-prefix">Rp</span>
+            <input class="form-input form-amount" id="txAmount" type="number" inputmode="numeric" placeholder="0" required autofocus>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <div class="cat-grid">${catOpts}</div>
+          <input type="hidden" id="txCat" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan</label>
+          <input class="form-input" id="txNote" type="text" placeholder="e.g. Superindo, GoFood...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal</label>
+          <input class="form-input" id="txDate" type="date" value="${today()}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </form>`);
+  },
+
+  _selectCat(id){
+    document.getElementById('txCat').value=id;
+    document.querySelectorAll('.cat-option').forEach(t=>{
+      t.classList.remove('selected');
+      t.style.background=''; t.style.color='';
+    });
+    const el=document.querySelector(`.cat-option[data-cat="${id}"]`);
+    if(el){ const c=catById(id); el.classList.add('selected'); el.style.background=c.color; el.style.color='#fff'; }
+  },
+
+  openSetIncome(current){
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Set Pemasukan</div>
+      <form onsubmit="Modal.submitSetIncome(event)">
+        <div class="form-group">
+          <label class="form-label">Nominal Pemasukan</label>
+          <div class="form-amount-wrap">
+            <span class="form-amount-prefix">Rp</span>
+            <input class="form-input form-amount" id="incomeModalInput" type="number" inputmode="numeric"
+              placeholder="0" value="${current||''}" required autofocus>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:-6px 0 18px;line-height:1.6;">Masukkan total pemasukan bulan ini — gaji, freelance, bonus, dll bisa dijumlah di sini.</p>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </form>`);
+  },
+  submitSetIncome(e){
+    e.preventDefault();
+    const income=parseInt(document.getElementById('incomeModalInput').value||'0');
+    const md=DB.getMonth(State.month)||{};
+    DB.saveMonth(State.month,{...md,income});
+    this.close(); App.render();
+  },
+
+  openSaveTemplate(){
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Simpan Template</div>
+      <form onsubmit="Modal.submitSaveTemplate(event)">
+        <div class="form-group">
+          <label class="form-label">Nama Template</label>
+          <input class="form-input" id="tplName" type="text" placeholder="e.g. Alokasi Gajian" required autofocus>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:-8px 0 18px;">Alokasi yang sudah kamu isi akan disimpan sebagai template dan bisa dipakai bulan-bulan berikutnya.</p>
+        <button type="submit" class="btn btn-primary">Simpan Template</button>
+      </form>`);
+  },
+  submitSaveTemplate(e){
+    e.preventDefault();
+    const name=document.getElementById('tplName').value.trim();
+    if(!name)return;
+    App.saveTemplateFromCurrent(name);
+  },
+
+  openEditCategory(id){
+    const cat = CATEGORIES.find(c=>c.id===id);
+    if(!cat) return;
+    let selIconIdx = CAT_ICONS.findIndex(ic=>ic.lucide===cat.lucide);
+    if(selIconIdx<0) selIconIdx=0;
+    let selColorIdx = CAT_COLORS.findIndex(c=>c.color===cat.color);
+    if(selColorIdx<0) selColorIdx=0;
+
+    const iconGrid = CAT_ICONS.map((ic,i)=>`
+      <button type="button" class="icon-pick-btn${i===selIconIdx?' active':''}" data-lucide-pick="${ic.lucide}"
+        onclick="Modal._pickIcon('${ic.lucide}',this)">
+        ${icon(ic.lucide,18,'currentColor')}
+        <span>${ic.label}</span>
+      </button>`).join('');
+
+    const colorRow = CAT_COLORS.map((c,i)=>`
+      <div class="color-pick-dot${i===selColorIdx?' active':''}" data-color="${c.color}" data-bg="${c.bg}"
+        style="background:${c.color}"
+        onclick="Modal._pickColor('${c.color}','${c.bg}',this)"></div>`).join('');
+
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Edit Kategori</div>
+      <form onsubmit="Modal.submitEditCategory(event,'${id}')">
+        <div class="form-group">
+          <label class="form-label">Nama Kategori</label>
+          <input class="form-input" id="catName" type="text" value="${cat.name}" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon</label>
+          <div class="icon-picker-grid">${iconGrid}</div>
+          <input type="hidden" id="catIcon" value="${cat.lucide}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Warna</label>
+          <div class="color-pick-row">${colorRow}</div>
+          <input type="hidden" id="catColor" value="${cat.color}">
+          <input type="hidden" id="catBg" value="${cat.bg}">
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+      </form>`);
+  },
+  submitEditCategory(e, id){
+    e.preventDefault();
+    const name = document.getElementById('catName').value.trim();
+    const lucide = document.getElementById('catIcon').value;
+    const color = document.getElementById('catColor').value;
+    const bg = document.getElementById('catBg').value;
+    if(!name) return;
+    App.editCategory(id, { name, lucide, color, bg });
+  },
+  // Edit category from within the alloc picker, then return to picker
+  _editCatFromPicker(catId, incomeId){
+    const cat = CATEGORIES.find(c=>c.id===catId);
+    if(!cat) return;
+    let selIconIdx = Math.max(0, CAT_ICONS.findIndex(ic=>ic.lucide===cat.lucide));
+    let selColorIdx = Math.max(0, CAT_COLORS.findIndex(c=>c.color===cat.color));
+    const iconGrid = CAT_ICONS.map((ic,i)=>`
+      <button type="button" class="icon-pick-btn${i===selIconIdx?' active':''}" data-lucide-pick="${ic.lucide}" onclick="Modal._pickIcon('${ic.lucide}',this)">${icon(ic.lucide,18,'currentColor')}<span>${ic.label}</span></button>`).join('');
+    const colorRow = CAT_COLORS.map((c,i)=>`
+      <div class="color-pick-dot${i===selColorIdx?' active':''}" data-color="${c.color}" data-bg="${c.bg}" style="background:${c.color}" onclick="Modal._pickColor('${c.color}','${c.bg}',this)"></div>`).join('');
+    const isSaving = cat.type==='saving';
+    const isFamily = cat.type==='family';
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Edit Kategori</div>
+      <form onsubmit="Modal._submitEditCatFromPicker(event,'${catId}','${incomeId}')">
+        <div class="form-group">
+          <label class="form-label">Nama Kategori</label>
+          <input class="form-input" id="catName" type="text" value="${cat.name}" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon</label>
+          <div class="icon-picker-grid">${iconGrid}</div>
+          <input type="hidden" id="catIcon" value="${cat.lucide}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Warna</label>
+          <div class="color-pick-row">${colorRow}</div>
+          <input type="hidden" id="catColor" value="${cat.color}">
+          <input type="hidden" id="catBg" value="${cat.bg}">
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border-radius:12px;cursor:pointer;margin-bottom:8px;">
+          <input type="checkbox" id="catIsSaving" ${isSaving?'checked':''} style="width:18px;height:18px;accent-color:var(--blue);cursor:pointer;">
+          <div><div style="font-size:13px;font-weight:600;">Tabungan / Investasi</div><div style="font-size:11px;color:var(--text-muted);">Tidak dihitung sebagai pengeluaran</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border-radius:12px;cursor:pointer;margin-bottom:18px;">
+          <input type="checkbox" id="catIsFamily" ${isFamily?'checked':''} style="width:18px;height:18px;accent-color:#059669;cursor:pointer;">
+          <div><div style="font-size:13px;font-weight:600;">Kontribusi Keluarga</div><div style="font-size:11px;color:var(--text-muted);">Alokasi masuk ke tab Keluarga</div></div>
+        </label>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </form>`);
+  },
+  _submitEditCatFromPicker(e, catId, incomeId){
+    e.preventDefault();
+    const name   = document.getElementById('catName').value.trim();
+    const lucide  = document.getElementById('catIcon').value;
+    const color   = document.getElementById('catColor').value;
+    const bg      = document.getElementById('catBg').value;
+    const isSaving= document.getElementById('catIsSaving')?.checked;
+    const isFamily= document.getElementById('catIsFamily')?.checked;
+    const type    = isSaving?'saving':isFamily?'family':undefined;
+    if(!name) return;
+    App.editCategory(catId, { name, lucide, color, bg, ...(type?{type}:{type:undefined}) });
+    // Reopen picker
+    setTimeout(()=>this.openAddAllocRow(incomeId), 50);
+  },
+
+  openAddCategory(){
+    let selIcon = CAT_ICONS[0].lucide;
+    let selColor = CAT_COLORS[0];
+
+    const iconGrid = CAT_ICONS.map((ic,i)=>`
+      <button type="button" class="icon-pick-btn${i===0?' active':''}" data-lucide-pick="${ic.lucide}"
+        onclick="Modal._pickIcon('${ic.lucide}',this)">
+        ${icon(ic.lucide,18,'currentColor')}
+        <span>${ic.label}</span>
+      </button>`).join('');
+
+    const colorRow = CAT_COLORS.map((c,i)=>`
+      <div class="color-pick-dot${i===0?' active':''}" data-color="${c.color}" data-bg="${c.bg}"
+        style="background:${c.color}"
+        onclick="Modal._pickColor('${c.color}','${c.bg}',this)"></div>`).join('');
+
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Tambah Kategori</div>
+      <form onsubmit="Modal.submitAddCategory(event)">
+        <div class="form-group">
+          <label class="form-label">Nama Kategori</label>
+          <input class="form-input" id="catName" type="text" placeholder="e.g. Transportasi" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icon</label>
+          <div class="icon-picker-grid">${iconGrid}</div>
+          <input type="hidden" id="catIcon" value="${selIcon}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Warna</label>
+          <div class="color-pick-row">${colorRow}</div>
+          <input type="hidden" id="catColor" value="${selColor.color}">
+          <input type="hidden" id="catBg" value="${selColor.bg}">
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border-radius:12px;cursor:pointer;margin-bottom:8px;">
+          <input type="checkbox" id="catIsSaving" style="width:18px;height:18px;accent-color:var(--blue);cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">Tabungan / Investasi</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:1px;">Tidak dihitung sebagai pengeluaran</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg);border-radius:12px;cursor:pointer;margin-bottom:18px;">
+          <input type="checkbox" id="catIsFamily" style="width:18px;height:18px;accent-color:#059669;cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">Kontribusi Keluarga</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:1px;">Alokasi masuk ke tab Keluarga</div>
+          </div>
+        </label>
+        <button type="submit" class="btn btn-primary">Tambah Kategori</button>
+      </form>`);
+  },
+  _pickIcon(lucide, el){
+    document.querySelectorAll('.icon-pick-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('catIcon').value = lucide;
+  },
+  _pickColor(color, bg, el){
+    document.querySelectorAll('.color-pick-dot').forEach(d=>d.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('catColor').value = color;
+    document.getElementById('catBg').value = bg;
+  },
+  submitAddCategory(e){
+    e.preventDefault();
+    const name = document.getElementById('catName').value.trim();
+    const lucide = document.getElementById('catIcon').value;
+    const color = document.getElementById('catColor').value;
+    const bg = document.getElementById('catBg').value;
+    if(!name)return;
+    const isSaving = document.getElementById('catIsSaving')?.checked;
+    const isFamily = document.getElementById('catIsFamily')?.checked;
+    const type = isSaving ? 'saving' : isFamily ? 'family' : undefined;
+    App.addCategory({ name, lucide, color, bg, ...(type?{type}:{}) });
+  },
+
+  submitAdd(e){
+    e.preventDefault();
+    const amount=parseInt(document.getElementById('txAmount').value);
+    const category=document.getElementById('txCat').value;
+    const note=document.getElementById('txNote').value.trim();
+    const date=document.getElementById('txDate').value;
+    if(!amount||!category||!date)return;
+    DB.addTx({amount,category,note,date});
+    this.close(); App.render();
+  },
+
+  // ── Income source modals ──
+  openAddIncome(){
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Tambah Pemasukan</div>
+      <form onsubmit="Modal.submitAddIncome(event)">
+        <div class="form-group">
+          <label class="form-label">Label</label>
+          <input class="form-input" id="incLabel" type="text" placeholder="e.g. THR, Bonus, Freelance" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nominal</label>
+          <div class="form-amount-wrap">
+            <span class="form-amount-prefix">Rp</span>
+            <input class="form-input form-amount" id="incAmount" type="number" inputmode="numeric" placeholder="0" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Gajian</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input class="form-input" id="incPayDay" type="number" inputmode="numeric" min="1" max="31" placeholder="1" value="1" style="max-width:80px;">
+            <span style="font-size:13px;color:var(--text-muted);">setiap bulan — alokasi tabungan baru dihitung setelah tanggal ini</span>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:-6px 0 18px;line-height:1.6;">Setelah disimpan, tap card-nya untuk atur alokasi.</p>
+        <button type="submit" class="btn btn-primary">Tambah</button>
+      </form>`);
+  },
+  submitAddIncome(e){
+    e.preventDefault();
+    const label = document.getElementById('incLabel').value.trim();
+    const amount = parseInt(document.getElementById('incAmount').value||'0');
+    const payDay = parseInt(document.getElementById('incPayDay').value||'1') || 1;
+    if(!label) return;
+    App.addIncome(label, amount, payDay);
+  },
+
+  openEditIncome(id){
+    const incomes = DB.getIncomes(State.month);
+    const entry = incomes.find(e=>e.id===id);
+    if(!entry) return;
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Edit Pemasukan</div>
+      <form onsubmit="Modal.submitEditIncome(event,'${id}')">
+        <div class="form-group">
+          <label class="form-label">Label</label>
+          <input class="form-input" id="incLabel" type="text" value="${entry.label}" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nominal</label>
+          <div class="form-amount-wrap">
+            <span class="form-amount-prefix">Rp</span>
+            <input class="form-input form-amount" id="incAmount" type="number" inputmode="numeric" value="${entry.amount||''}" placeholder="0" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Gajian</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input class="form-input" id="incPayDay" type="number" inputmode="numeric" min="1" max="31" value="${entry.payDay||1}" style="max-width:80px;">
+            <span style="font-size:13px;color:var(--text-muted);">setiap bulan</span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </form>`);
+  },
+  submitEditIncome(e, id){
+    e.preventDefault();
+    const label = document.getElementById('incLabel').value.trim();
+    const amount = parseInt(document.getElementById('incAmount').value||'0');
+    const payDay = parseInt(document.getElementById('incPayDay').value||'1') || 1;
+    if(!label) return;
+    App.editIncome(id, label, amount, payDay);
+  },
+
+  openAddAllocRow(incomeId){
+    const incomes = DB.getIncomes(State.month);
+    const inc = incomes.find(e=>e.id===incomeId);
+    if(!inc) return;
+    const excluded = CATEGORIES.filter(c => !(c.id in (inc.allocations||{})));
+    const rows = excluded.map(c=>`
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="add-alloc-pick-btn" onclick="Modal.pickAllocRow('${incomeId}','${c.id}')" type="button" style="flex:1;">
+          <span class="add-alloc-pick-dot" style="background:${c.color}"></span>
+          ${c.name}
+        </button>
+        <button type="button" onclick="Modal._editCatFromPicker('${c.id}','${incomeId}')"
+          style="flex-shrink:0;width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);">
+          ${icon('pencil',14,'currentColor')}
+        </button>
+      </div>`).join('');
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Tambah Pos Alokasi</div>
+      ${excluded.length?`<p style="font-size:13px;color:var(--text-muted);margin:-4px 0 16px;line-height:1.5;">Pilih kategori yang ingin ditambahkan ke pemasukan ini.</p>
+      <div class="add-alloc-pick-list">${rows}</div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">`
+      :`<p style="font-size:13px;color:var(--text-muted);margin:-4px 0 16px;line-height:1.5;">Semua kategori sudah ada. Buat kategori baru untuk ditambahkan.</p><div>`}
+        <button class="btn btn-secondary" onclick="Modal.openAddCategory();" type="button" style="width:100%;font-size:13px;">+ Buat kategori baru</button>
+      </div>`);
+  },
+  pickAllocRow(incomeId, catId){
+    const incomes = DB.getIncomes(State.month);
+    const inc = incomes.find(e=>e.id===incomeId);
+    if(!inc) return;
+    if(!(catId in (inc.allocations||{}))){ inc.allocations[catId] = 0; }
+    DB.saveIncomes(State.month, incomes);
+    this.close();
+    App.render();
+    if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart);
+  },
+
+  openAllocIncome(id){
+    const incomes = DB.getIncomes(State.month);
+    const entry = incomes.find(e=>e.id===id);
+    if(!entry) return;
+    const templates = DB.getTemplates();
+    const totalEntry = entry.amount||0;
+
+    const allocFields = CATEGORIES.map(cat=>{
+      const val = entry.allocations?.[cat.id]||0;
+      return`<div class="alloc-row">
+        ${catBox(cat,36,15)}
+        <span class="alloc-name">${cat.name}</span>
+        <input class="alloc-field" data-cat="${cat.id}" type="number" inputmode="numeric"
+          value="${val||''}" placeholder="0"
+          oninput="Modal._updateAllocTotal(${totalEntry})">
+      </div>`;
+    }).join('');
+
+    const tplSection = templates.length ? `
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:8px;">Pakai Template</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${templates.map((t,i)=>`
+            <button type="button" onclick="App.applyTemplateToIncome('${id}',${i})"
+              style="background:var(--blue-light);color:var(--blue);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+              ${icon('bookmark',12,'currentColor')} ${t.name}
+            </button>`).join('')}
+        </div>
+      </div>` : '';
+
+    const currentAlloc = Object.values(entry.allocations||{}).reduce((s,v)=>s+v,0);
+    const diff0 = totalEntry - currentAlloc;
+
+    this.open(`
+      <div class="modal-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div>
+          <div class="modal-title" style="margin-bottom:2px;">${entry.label}</div>
+          <div style="font-size:13px;color:var(--text-muted);">${totalEntry?fmtFull(totalEntry):'Nominal belum diisi'}</div>
+        </div>
+        <button onclick="Modal._saveTemplateFromModal()" title="Simpan sebagai template"
+          style="flex-shrink:0;background:var(--blue-light);color:var(--blue);border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">
+          ${icon('bookmark',13,'currentColor')} Simpan Tpl
+        </button>
+      </div>
+      ${tplSection}
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">Alokasi per Kategori</div>
+        ${allocFields}
+      </div>
+      <div class="alloc-total" style="margin-bottom:14px;" id="allocTotalModal">
+        <span>Total Alokasi</span>
+        <span class="alloc-total-val ${diff0<0?'over-budget':diff0===0?'':''}" id="allocTotalModalVal">${fmtRp(currentAlloc)}</span>
+      </div>
+      <button class="btn btn-primary" onclick="App.saveIncomeAllocations('${id}')">Simpan Alokasi</button>`);
+  },
+  _saveTemplateFromModal(){
+    const name = prompt('Nama template:','');
+    if(!name?.trim()) return;
+    App.saveTemplateFromCurrent(name.trim());
+    // re-open won't happen since saveTemplateFromCurrent calls Modal.close() + App.render()
+    // that's fine — user can reopen alloc modal
+  },
+  _updateAllocTotal(incomeAmount){
+    let total=0;
+    document.querySelectorAll('.alloc-field').forEach(f=>total+=parseInt(f.value||0)||0);
+    const el = document.getElementById('allocTotalModalVal');
+    if(el){
+      const diff = incomeAmount - total;
+      el.textContent = fmtRp(total);
+      el.className = 'alloc-total-val '+(diff<0?'over-budget':diff===0&&total>0?'':'');
+    }
+  },
+  openPickTemplate(incomeId){
+    const templates = DB.getTemplates();
+    if(!templates.length) return;
+    const rows = templates.map((t,i)=>{
+      const tplTotal = t.allocations?Object.values(t.allocations).reduce((a,b)=>a+b,0):0;
+      return`<div onclick="App.applyTemplateToIncome('${incomeId}',${i})"
+        style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--divider);cursor:pointer;">
+        <div style="width:38px;height:38px;border-radius:10px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          ${icon('bookmark',16,'var(--blue)')}
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;">${t.name||'Template '+(i+1)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${fmtRp(tplTotal)} · ${Object.keys(t.allocations||{}).length} kategori</div>
+        </div>
+        <button onclick="event.stopPropagation();App.deleteTemplate(${i})"
+          style="background:none;border:none;color:var(--text-faint);cursor:pointer;padding:6px;">${icon('trash-2',14,'currentColor')}</button>
+        ${icon('chevron-right',16,'var(--text-faint)')}
+      </div>`;
+    }).join('');
+    this.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Pilih Template</div>
+      <div style="margin-top:-4px;">${rows}</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:14px;line-height:1.6;">Template akan mengisi alokasi untuk sumber pemasukan yang aktif.</p>`);
+  },
+};
+
+// ── Live totals (in alloc modal) handled by Modal._updateAllocTotal via oninput ──
+
+// ── FamilyApp ─────────────────────────────────────────────────────
+const FamilyDB = {
+  _mKey: 'family_months',
+  _txKey: 'family_tx',
+  _catKey: 'family_categories',
+
+  getMonthData(m){ try{ return (JSON.parse(localStorage.getItem(this._mKey)||'{}'))[m]||{}; }catch{ return {}; } },
+  saveMonthData(m, data){
+    const all = JSON.parse(localStorage.getItem(this._mKey)||'{}');
+    all[m] = data;
+    localStorage.setItem(this._mKey, JSON.stringify(all));
+  },
+  getTxs(m){
+    try{
+      return JSON.parse(localStorage.getItem(this._txKey)||'[]').filter(t=>t.date.startsWith(m));
+    }catch{ return []; }
+  },
+  addTx(tx){
+    const txs = JSON.parse(localStorage.getItem(this._txKey)||'[]');
+    txs.push(tx);
+    localStorage.setItem(this._txKey, JSON.stringify(txs));
+  },
+  deleteTx(id){
+    const txs = JSON.parse(localStorage.getItem(this._txKey)||'[]').filter(t=>t.id!==id);
+    localStorage.setItem(this._txKey, JSON.stringify(txs));
+  },
+  getCategories(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(this._catKey)||'null');
+      if(saved){
+        const savingIds = new Set(['fam_emergency','fam_qurban']);
+        const nonSavingIds = new Set(['fam_liquid','fam_pajak']);
+        let dirty = false;
+        saved.forEach(c => {
+          if(savingIds.has(c.id) && c.type !== 'saving'){ c.type = 'saving'; dirty = true; }
+          if(nonSavingIds.has(c.id) && c.type === 'saving'){ delete c.type; dirty = true; }
+        });
+        if(dirty) localStorage.setItem(this._catKey, JSON.stringify(saved));
+        return saved;
+      }
+    }catch{}
+    const defaults = [
+      { id:'fam_liquid',   name:'Liquid',    lucide:'droplets',        color:'#2563eb', bg:'#dbeafe' },
+      { id:'fam_emergency',name:'Emergency', lucide:'shield',          color:'#dc2626', bg:'#fee2e2', type:'saving' },
+      { id:'fam_qurban',   name:'Qurban',    lucide:'heart',           color:'#d97706', bg:'#fef3c7', type:'saving' },
+      { id:'fam_pajak',    name:'Pajak',     lucide:'landmark',        color:'#6366f1', bg:'#e0e7ff' },
+      { id:'fam_listrik',  name:'Listrik',   lucide:'zap',             color:'#ea580c', bg:'#ffedd5' },
+      { id:'fam_gas',      name:'Gas',       lucide:'flame',           color:'#f59e0b', bg:'#fef9c3' },
+      { id:'fam_tehima',   name:'Teh Ima',   lucide:'user',            color:'#db2777', bg:'#fce7f3' },
+      { id:'fam_sampah',   name:'Sampah',    lucide:'trash-2',         color:'#9ca3af', bg:'#f3f4f6' },
+      { id:'fam_internet', name:'Internet',  lucide:'wifi',            color:'#0d9488', bg:'#ccfbf1' },
+    ];
+    localStorage.setItem(this._catKey, JSON.stringify(defaults));
+    return defaults;
+  },
+  saveCategories(cats){ localStorage.setItem(this._catKey, JSON.stringify(cats)); },
+  getAllocations(m){ return this.getMonthData(m).allocations || {}; },
+  saveAllocations(m, allocs){
+    const d = this.getMonthData(m);
+    this.saveMonthData(m, {...d, allocations: allocs});
+  },
+
+  // Pull income from emir's 'family' type category allocations
+  getIncomeFromEmir(m){
+    try{
+      const emirMonths = JSON.parse(localStorage.getItem('emir_months')||'{}');
+      const emirCats   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+      const famCatIds  = new Set(emirCats.filter(c=>c.type==='family').map(c=>c.id));
+      if(!famCatIds.size) return { total: 0, sources: [] };
+      const md = emirMonths[m];
+      if(!md?.incomes) return { total: 0, sources: [] };
+      let total = 0;
+      const sources = [];
+      md.incomes.forEach(inc => {
+        const contrib = Object.entries(inc.allocations||{})
+          .filter(([k])=>famCatIds.has(k))
+          .reduce((s,[,v])=>s+(v||0), 0);
+        if(contrib > 0){ total += contrib; sources.push({ label: inc.label, amount: contrib }); }
+      });
+      return { total, sources };
+    }catch{ return { total: 0, sources: [] }; }
+  },
+};
+
+const FamilyState = { subtab: 'ringkasan' };
+
+const FamilyApp = {
+  render(){
+    const m = State.month;
+    const { total: income, sources } = FamilyDB.getIncomeFromEmir(m);
+    const allocs = FamilyDB.getAllocations(m);
+    const txs = FamilyDB.getTxs(m);
+    const cats = FamilyDB.getCategories();
+    const totalAlloc = Object.values(allocs).reduce((s,v)=>s+(v||0), 0);
+    const totalSpent = txs.reduce((s,t)=>s+t.amount, 0);
+    const sisa = income - totalSpent;
+
+    const emirFamCats = (() => {
+      try{ return JSON.parse(localStorage.getItem('emir_categories')||'[]').filter(c=>c.type==='family'); }catch{ return []; }
+    })();
+
+    let h = '';
+
+    // Hero
+    h += `<div class="fam-hero">
+      <div class="fam-hero-label">Keluarga Kecil · ${mFull(m)}</div>
+      <div class="fam-hero-val">${income ? fmtFull(income) : 'Belum ada kontribusi'}</div>
+      <div class="fam-hero-sub">${income ? `Sisa ${fmtRp(sisa)} · Terpakai ${fmtRp(totalSpent)}` : 'Tandai kategori sebagai "Keluarga" di tab Pemasukan'}</div>
+    </div>`;
+
+    // No family category configured yet
+    if(!emirFamCats.length){
+      h += `<div class="section-flat" style="padding:24px 20px;text-align:center;">
+        ${icon('house-heart',40,'var(--text-faint)')}
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:12px;">Belum ada kategori keluarga</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:6px;line-height:1.6;">Buat kategori baru di tab Pemasukan dan centang <b>"Kontribusi Keluarga"</b> agar alokasinya masuk ke sini.</div>
+      </div>`;
+      return h;
+    }
+
+    // Sub-tabs
+    h += `<div class="fam-subtabs">
+      <button class="fam-subtab${FamilyState.subtab==='ringkasan'?' active':''}" onclick="FamilyApp.setSubtab('ringkasan')">Ringkasan</button>
+      <button class="fam-subtab${FamilyState.subtab==='transaksi'?' active':''}" onclick="FamilyApp.setSubtab('transaksi')">Transaksi</button>
+      <button class="fam-subtab${FamilyState.subtab==='alokasi'?' active':''}" onclick="FamilyApp.setSubtab('alokasi')">Alokasi</button>
+    </div>`;
+
+    if(FamilyState.subtab === 'ringkasan') h += this._renderRingkasan(m, income, txs, allocs, cats, sisa, totalSpent, sources);
+    else if(FamilyState.subtab === 'transaksi') h += this._renderTransaksi(m, txs, cats);
+    else h += this._renderAlokasi(m, income, allocs, cats, totalAlloc);
+
+    return h;
+  },
+
+  // ── Public wrappers (called by Render.* when State.view==='keluarga') ──
+
+  renderRingkasan(){
+    const m = State.month;
+    const { total: income, sources } = FamilyDB.getIncomeFromEmir(m);
+    const allocs = FamilyDB.getAllocations(m);
+    const cats = FamilyDB.getCategories();
+    const txs = FamilyDB.getTxs(m);
+    const spendCats = cats.filter(c => c.type !== 'saving');
+
+    // All-time data for saldo tersedia calculation
+    const allFamMonths = (() => { try { return JSON.parse(localStorage.getItem('family_months')||'{}'); } catch { return {}; } })();
+    const allFamTxs    = (() => { try { return JSON.parse(localStorage.getItem('family_tx')||'[]'); } catch { return []; } })();
+
+    // payDay helper: given a month key, determine the effective payDate
+    const getFamPayDate = (mo) => {
+      let payDay = 1;
+      try {
+        const emirMonths = JSON.parse(localStorage.getItem('emir_months')||'{}');
+        const emirCats   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+        const famCatIds  = new Set(emirCats.filter(c=>c.type==='family').map(c=>c.id));
+        const md = emirMonths[mo];
+        if(md?.incomes){
+          md.incomes.forEach(inc => {
+            const contrib = Object.entries(inc.allocations||{}).filter(([k])=>famCatIds.has(k)).reduce((s,[,v])=>s+(v||0),0);
+            if(contrib > 0 && (inc.payDay||1) > payDay) payDay = inc.payDay||1;
+          });
+        }
+      } catch(e){}
+      return mo + '-' + String(payDay).padStart(2,'0');
+    };
+
+    // Sisa = sum of all saldo tersedia across all spending categories (only realized allocs)
+    const totalSisa = spendCats.reduce((sum, cat) => {
+      const totalAllocEver = Object.entries(allFamMonths).reduce((s,[mo,md])=>{
+        const payDate = getFamPayDate(mo);
+        if(payDate > today()) return s;
+        return s + ((md.allocations||{})[cat.id]||0);
+      }, 0);
+      const totalSpentEver = allFamTxs.filter(t=>t.cat===cat.id).reduce((s,t)=>s+t.amount, 0);
+      return sum + (cat.initialBalance||0) + totalAllocEver - totalSpentEver;
+    }, 0);
+
+    // totalSpent this month (for display on hero stats)
+    const totalSpent = txs.filter(t=>{ const c=cats.find(x=>x.id===t.cat); return c?.type!=='saving'; }).reduce((s,t)=>s+t.amount, 0);
+
+    return this._renderRingkasan(m, income, txs, allocs, cats, totalSisa, totalSpent, sources);
+  },
+
+  renderTransaksi(){
+    const m = State.month;
+    const txs = FamilyDB.getTxs(m);
+    const cats = FamilyDB.getCategories();
+    return this._renderTransaksi(m, txs, cats);
+  },
+
+  renderTabungan(){
+    const cats = FamilyDB.getCategories().filter(c => c.type === 'saving');
+    if(!cats.length){
+      return `<div class="empty">${icon('piggy-bank',40,'var(--text-faint)')}<div class="empty-label">Belum ada kantong tabungan</div><div class="empty-sub">Tandai kategori sebagai "saving" untuk melihatnya di sini.</div></div>`;
+    }
+
+    const allFamMonths = (() => { try { return JSON.parse(localStorage.getItem('family_months')||'{}'); } catch { return {}; } })();
+    const allMonths = Object.keys(allFamMonths).sort();
+    const allFamTxs = (() => { try { return JSON.parse(localStorage.getItem('family_tx')||'[]'); } catch { return []; } })();
+
+    let h = '';
+    cats.forEach(cat => {
+      const initialBalance = cat.initialBalance || 0;
+      let totalIn = initialBalance, totalOut = 0;
+      const history = [];
+
+      if(initialBalance > 0){
+        history.push({ date: '2000-01-01', label: 'Saldo awal', amount: initialBalance, type: 'in' });
+      }
+
+      allMonths.forEach(mo => {
+        const allocs = (allFamMonths[mo]?.allocations) || {};
+        const alloc = allocs[cat.id] || 0;
+        if(alloc > 0){
+          // payDay filter: check personal income sources for this month
+          let payDay = 1;
+          try {
+            const emirMonths = JSON.parse(localStorage.getItem('emir_months')||'{}');
+            const emirCats   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+            const famCatIds  = new Set(emirCats.filter(c=>c.type==='family').map(c=>c.id));
+            const md = emirMonths[mo];
+            if(md?.incomes){
+              md.incomes.forEach(inc => {
+                const contrib = Object.values(Object.fromEntries(Object.entries(inc.allocations||{}).filter(([k])=>famCatIds.has(k)))).reduce((s,v)=>s+(v||0),0);
+                if(contrib > 0 && (inc.payDay||1) > payDay) payDay = inc.payDay||1;
+              });
+            }
+          } catch(e){}
+          const payDate = mo + '-' + String(payDay).padStart(2,'0');
+          if(payDate > today()) return; // not realized yet
+          totalIn += alloc;
+          history.push({ date: payDate, label: 'Alokasi · '+mo, amount: alloc, type: 'in' });
+        }
+      });
+
+      allFamTxs.filter(t=>t.cat===cat.id).forEach(tx => {
+        totalOut += tx.amount;
+        history.push({ date: tx.date, label: tx.note||'Penarikan', amount: tx.amount, type: 'out' });
+      });
+
+      const balance = totalIn - totalOut;
+      history.sort((a,b)=>b.date.localeCompare(a.date));
+      const recent = history.slice(0, 5);
+
+      h += `<div class="pocket-card">
+        <div class="pocket-header">
+          <div class="pocket-icon" style="background:${cat.bg};">${icon(cat.lucide,20,cat.color)}</div>
+          <div>
+            <div class="pocket-name">${cat.name}</div>
+            <div class="pocket-sub">Saldo berjalan</div>
+          </div>
+        </div>
+        <div class="pocket-balance" style="color:${balance<0?'var(--red)':cat.color}">${fmtRp(Math.abs(balance))}${balance<0?' <span style="font-size:14px;font-weight:600;color:var(--red)">defisit</span>':''}</div>
+        <div class="pocket-stats">
+          <div class="pocket-stat">
+            <div class="pocket-stat-label">Total Masuk</div>
+            <div class="pocket-stat-val" style="color:#16a34a;">${fmtRp(totalIn)}</div>
+          </div>
+          <div class="pocket-stat">
+            <div class="pocket-stat-label">Total Keluar</div>
+            <div class="pocket-stat-val" style="color:var(--red);">${fmtRp(totalOut)}</div>
+          </div>
+        </div>
+        ${recent.length?`<div style="margin-top:16px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">Riwayat</div>
+          ${recent.map(r=>`<div class="pocket-history-row">
+            <div class="pocket-hist-dot" style="background:${r.type==='in'?'#16a34a':'var(--red)'}"></div>
+            <div class="pocket-hist-info">
+              <div class="pocket-hist-label">${r.label}</div>
+              <div class="pocket-hist-date">${fmtDate(r.date)}</div>
+            </div>
+            <div class="pocket-hist-amt" style="color:${r.type==='in'?'#16a34a':'var(--red)'}">
+              ${r.type==='in'?'+':'−'}${fmtRp(r.amount)}
+            </div>
+          </div>`).join('')}
+        </div>`:''}
+      </div>`;
+    });
+    return h;
+  },
+
+  renderAlokasi(){
+    const m = State.month;
+    const { total: income } = FamilyDB.getIncomeFromEmir(m);
+    const allocs = FamilyDB.getAllocations(m);
+    const cats = FamilyDB.getCategories(); // semua kategori termasuk saving bisa di-alokasi
+    const totalAlloc = Object.values(allocs).reduce((s,v)=>s+(v||0), 0);
+    return this._renderAlokasi(m, income, allocs, cats, totalAlloc);
+  },
+
+  _renderRingkasan(m, income, txs, allocs, cats, sisa, totalSpent, sources){
+    const spendCats = cats.filter(c => c.type !== 'saving');
+    const totalAvailable = sisa + totalSpent; // sisa here is totalSisa passed in
+    const pct = totalAvailable > 0 ? Math.min(totalSpent / totalAvailable * 100, 100) : 0;
+    const sisaColor = sisa < 0 ? '#fca5a5' : sisa < totalAvailable * .15 ? '#fde68a' : '#ffffff';
+
+    // Hero card — same style as personal
+    let h = `<div class="hero-card" style="background:linear-gradient(135deg,#059669 0%,#047857 100%);">
+      <div class="hero-label">Sisa Budget Keluarga</div>
+      <div class="hero-value" style="color:${sisaColor}">${fmtRp(Math.abs(sisa))}${sisa<0?' −':''}</div>
+      <div class="hero-sub">${sisa<0?'Defisit':'Total saldo tersedia'} · ${mFull(m)}</div>
+      <div class="hero-progress"><div class="hero-progress-fill" style="width:${pct}%;background:rgba(255,255,255,.5)"></div></div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hs-label">Pengeluaran</div>
+          <div class="hs-val">${fmtRp(totalSpent)}</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hs-label">Kontribusi</div>
+          <div class="hs-val">${fmtRp(income)}</div>
+        </div>
+      </div>
+    </div>`;
+
+    // Budget vs Aktual — allocs vs actual spending
+    const allFamMonths = (() => { try { return JSON.parse(localStorage.getItem('family_months')||'{}'); } catch { return {}; } })();
+    const allFamTxs    = (() => { try { return JSON.parse(localStorage.getItem('family_tx')||'[]'); } catch { return []; } })();
+    const budgetCats = spendCats.filter(cat => {
+      const b = allocs[cat.id]||0;
+      const s = txs.filter(t=>t.cat===cat.id).reduce((a,t)=>a+t.amount,0);
+      const hasInit = (cat.initialBalance||0) > 0;
+      return b>0 || s>0 || hasInit;
+    });
+    if(budgetCats.length){
+      h += `<div class="section-flat">
+        <div class="section-header"><span class="card-title">Budget vs Aktual</span></div>
+        <div style="padding:0 18px 16px;">`;
+      budgetCats.forEach(cat => {
+        const allocThisMonth = allocs[cat.id]||0;
+        const s = txs.filter(t=>t.cat===cat.id).reduce((a,t)=>a+t.amount,0);
+        // For cats with initialBalance, budget = saldo tersedia (initial + all allocs ever - all spending ever)
+        const totalAllocEver = Object.values(allFamMonths).reduce((sum,md)=>sum+((md.allocations||{})[cat.id]||0),0);
+        const totalSpentEver = allFamTxs.filter(t=>t.cat===cat.id).reduce((sum,t)=>sum+t.amount,0);
+        const saldoTersedia = (cat.initialBalance||0) + totalAllocEver - totalSpentEver;
+        const b = (cat.initialBalance||0) > 0 ? saldoTersedia : allocThisMonth;
+        const label = (cat.initialBalance||0) > 0 ? 'saldo tersedia' : null;
+        const pct = b>0 ? Math.min(s/b*100,100) : 0;
+        const over = s>b && b>0;
+        h += `<div class="budget-row">
+          <div class="budget-top">
+            <div style="width:38px;height:38px;border-radius:12px;background:${cat.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon(cat.lucide,16,cat.color)}</div>
+            <div class="budget-info">
+              <div class="budget-name">${cat.name}</div>
+              <div class="budget-nums ${over?'over-text':''}">
+                <span class="spent">${fmtFull(s)}</span>&nbsp;<span style="color:var(--text-faint)">/</span>&nbsp;${fmtRp(b)}${label?`<span style="font-size:10px;color:var(--text-muted);font-weight:500;"> ${label}</span>`:''}
+              </div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${over?'var(--red)':'var(--text-muted)'};">${b>0?Math.round(s/b*100):0}%</div>
+          </div>
+          <div class="budget-track">
+            <div class="budget-fill" style="width:${pct}%;background:${over?'var(--red)':cat.color}"></div>
+          </div>
+        </div>`;
+      });
+      h += `</div></div>`;
+    }
+
+    // Recent txs
+    const recent = [...txs].filter(t=>{ const c=cats.find(x=>x.id===t.cat); return c?.type!=='saving'; }).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+    h += `<div class="section-flat">
+      <div class="section-header">
+        <span class="card-title">Transaksi Terakhir</span>
+        ${recent.length?`<button onclick="State.tab='transaksi';App.render()" style="background:none;border:none;color:#059669;font-size:13px;font-weight:600;cursor:pointer;">Lihat semua</button>`:''}
+      </div>
+      <div style="padding:0 18px;">`;
+    if(!recent.length){
+      h += `<div style="text-align:center;padding:20px 0;color:var(--text-faint);font-size:13px;">Belum ada transaksi bulan ini</div>`;
+    } else {
+      recent.forEach(tx => { h += this._txRow(tx, cats); });
+    }
+    h += `</div></div>`;
+
+    return h;
+  },
+
+  _renderTransaksi(m, txs, cats){
+    if(!txs.length) return `<div class="empty">${icon('receipt',40,'var(--text-faint)')}<div class="empty-label">Belum ada transaksi</div><div class="empty-sub">Tap + untuk tambah transaksi keluarga</div></div>`;
+    const groups = {};
+    [...txs].sort((a,b)=>b.date.localeCompare(a.date)).forEach(tx=>{
+      if(!groups[tx.date]) groups[tx.date]=[];
+      groups[tx.date].push(tx);
+    });
+    let h = '';
+    Object.entries(groups).forEach(([date,items])=>{
+      const dayTotal = items.reduce((s,t)=>s+t.amount,0);
+      h += `<div class="tx-group">
+        <div class="tx-group-header">
+          <span class="tx-group-date">${fmtDate(date)}</span>
+          <span class="tx-group-total">${fmtFull(dayTotal)}</span>
+        </div>
+        <div class="tx-group-items">`;
+      items.forEach(tx => { h += this._txRow(tx, cats, true); });
+      h += `</div></div>`;
+    });
+    return h;
+  },
+
+  _renderAlokasi(m, income, allocs, cats, totalAlloc){
+    const diff = income - totalAlloc;
+    const pct = income > 0 ? Math.min(totalAlloc / income * 100, 100) : 0;
+    const remTxt = income > 0
+      ? (diff > 0 ? `Sisa ${fmtRp(diff)}` : diff < 0 ? `Over ${fmtRp(Math.abs(diff))}` : 'Penuh ✓')
+      : 'Set kontribusi terlebih dahulu';
+
+    // Sticky income hero — same style as personal but green
+    let h = `<div class="income-hero-sticky">
+    <div class="income-hero" style="background:linear-gradient(135deg,#059669 0%,#047857 100%);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+        <div class="income-hero-label">Kontribusi Keluarga · ${mFull(m)}</div>
+      </div>
+      <div class="income-hero-val">${income ? fmtFull(income) : 'Belum ada kontribusi'}</div>
+      <div class="income-hero-sub">${remTxt}</div>
+      <div class="income-hero-progress"><div class="income-hero-progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    </div>
+
+    <!-- Pie chart -->
+    <div class="section-flat" style="margin-bottom:10px;">
+      <div style="padding:18px 18px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-size:15px;font-weight:700;letter-spacing:-.02em;">Komposisi Alokasi</div>
+        </div>
+        <div style="position:relative;width:220px;height:220px;margin:0 auto 14px;">
+          <canvas id="famAllocChart"></canvas>
+          <div id="famChartCenter" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);">Total</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text);text-align:center;line-height:1.3;">${fmtRp(totalAlloc)}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;">
+          ${cats.filter(c=>(allocs[c.id]||0)>0).map(c=>`
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted);" class="fam-legend-item">
+              <span class="fam-legend-dot" data-cat="${c.id}" style="width:7px;height:7px;border-radius:50%;background:${c.color};flex-shrink:0;display:inline-block;"></span>
+              ${c.name}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Alloc rows -->
+    <div class="section-flat">
+      <div class="section-header" style="padding-bottom:4px;">
+        <div>
+          <span class="card-title">Alokasi · Keluarga Kecil</span>
+          ${income ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${fmtFull(income)} · ${diff<0?`<span style="color:var(--red)">Over ${fmtRp(Math.abs(diff))}</span>`:diff===0&&totalAlloc>0?'<span style="color:#059669">Penuh ✓</span>':`Sisa ${fmtRp(diff)}`}</div>` : ''}
+        </div>
+      </div>
+      <div style="padding:0 18px 8px;">`;
+
+    // Only show cats included in allocs (same pattern as personal)
+    const includedCats = cats.filter(c => c.id in allocs);
+    const excludedCats = cats.filter(c => !(c.id in allocs));
+
+    if(!includedCats.length){
+      h += `<div style="text-align:center;padding:20px 0 12px;color:var(--text-faint);font-size:13px;">Belum ada pos alokasi.<br>Tap + untuk tambah.</div>`;
+    }
+    includedCats.forEach(cat => {
+      const val = allocs[cat.id]||0;
+      h += `<div class="alloc-row">
+        <div style="width:36px;height:36px;border-radius:10px;background:${cat.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon(cat.lucide,15,cat.color)}</div>
+        <span class="alloc-name">${cat.name}${cat.type==='saving'?` <span style="font-size:9px;font-weight:700;color:#059669;background:#dcfce7;border-radius:99px;padding:1px 6px;vertical-align:middle;">Tabungan</span>`:''}
+        </span>
+        <input class="alloc-field" type="number" inputmode="numeric" value="${val||''}" placeholder="0"
+          data-famcat="${cat.id}" oninput="FamilyApp._liveTotal(${income})">
+        <button class="alloc-act alloc-del" onclick="FamilyApp.removeAllocRow('${m}','${cat.id}')" title="Hapus dari alokasi">${icon('x',13,'currentColor')}</button>
+      </div>`;
+    });
+
+    h += `<button class="add-cat-btn" onclick="FamilyApp.openAddAllocRow('${m}','${excludedCats.map(c=>c.id).join(',')}')">
+        ${icon('plus-circle',16,'currentColor')} Tambah Pos Alokasi
+      </button>
+      <div class="alloc-total">
+        <span>Total Alokasi</span>
+        <span class="alloc-total-val ${diff<0?'over-budget':diff===0&&totalAlloc>0?'':''}" id="famAllocTotal">${fmtRp(totalAlloc)}</span>
+      </div>
+    </div>
+    <div style="padding:0 18px 18px;display:flex;gap:8px;">
+      <button class="btn btn-primary" style="background:#059669;flex:1;margin-top:0;" onclick="FamilyApp.saveAllocations('${m}')">Simpan Alokasi</button>
+      <button onclick="FamilyApp.openAddCat()" title="Tambah kategori baru"
+        style="flex-shrink:0;margin-top:0;border:none;border-radius:var(--radius-sm);padding:0 16px;background:#dcfce7;color:#059669;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        ${icon('plus',16,'currentColor')}
+      </button>
+    </div></div>`;
+    return h;
+  },
+
+  _txRow(tx, cats, inGroup=false){
+    const cat = cats.find(c=>c.id===tx.cat) || cats[cats.length-1];
+    return `<div class="tx-row">
+      <div style="width:40px;height:40px;border-radius:12px;background:${cat.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon(cat.lucide,16,cat.color)}</div>
+      <div class="tx-info">
+        <div class="tx-note">${tx.note||cat.name}</div>
+        <div class="tx-meta">${inGroup?cat.name:fmtDate(tx.date)+' · '+cat.name}</div>
+      </div>
+      <div class="tx-amount">${fmtFull(tx.amount)}</div>
+      <button class="tx-del" onclick="FamilyApp.deleteTx('${tx.id}')">${icon('trash-2',14,'currentColor')}</button>
+    </div>`;
+  },
+
+  setSubtab(t){ FamilyState.subtab = t; App.render(); },
+
+  _liveTotal(income){
+    let total = 0;
+    document.querySelectorAll('[data-famcat]').forEach(el=>{ total += parseInt(el.value||'0')||0; });
+    const el = document.getElementById('famAllocTotal');
+    if(el) el.textContent = fmtRp(total);
+    updateFamAllocChart();
+  },
+
+  saveAllocations(m){
+    const allocs = FamilyDB.getAllocations(m);
+    document.querySelectorAll('[data-famcat]').forEach(el=>{
+      const v = parseInt(el.value||'0')||0;
+      if(v > 0) allocs[el.dataset.famcat] = v;
+      else delete allocs[el.dataset.famcat];
+    });
+    FamilyDB.saveAllocations(m, allocs);
+    App.render();
+  },
+
+  removeAllocRow(m, catId){
+    const allocs = FamilyDB.getAllocations(m);
+    delete allocs[catId];
+    FamilyDB.saveAllocations(m, allocs);
+    App.render();
+  },
+
+  openAddAllocRow(m, excludedIdsStr){
+    const excludedIds = excludedIdsStr ? excludedIdsStr.split(',').filter(Boolean) : [];
+    const cats = FamilyDB.getCategories().filter(c => excludedIds.includes(c.id));
+    const rows = cats.map(c=>`
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="add-alloc-pick-btn" onclick="FamilyApp._addAllocRow('${m}','${c.id}')" type="button" style="flex:1;">
+          <span class="add-alloc-pick-dot" style="background:${c.color}"></span>
+          ${c.name}
+        </button>
+        <button type="button" onclick="FamilyApp.openEditCat('${c.id}')"
+          style="flex-shrink:0;width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);">
+          ${icon('pencil',14,'currentColor')}
+        </button>
+      </div>`).join('');
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Tambah Pos Alokasi</div>
+      ${cats.length ? `<p style="font-size:13px;color:var(--text-muted);margin:-4px 0 16px;line-height:1.5;">Pilih kategori yang ingin ditambahkan ke alokasi keluarga.</p>
+      <div class="add-alloc-pick-list">${rows}</div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">`
+      :`<p style="font-size:13px;color:var(--text-muted);margin:-4px 0 16px;line-height:1.5;">Semua kategori sudah ada. Buat kategori baru untuk ditambahkan.</p><div>`}
+        <button class="btn btn-secondary" onclick="FamilyApp.openAddCat();" type="button" style="width:100%;font-size:13px;">+ Buat kategori baru</button>
+      </div>`);
+  },
+
+  _addAllocRow(m, catId){
+    const allocs = FamilyDB.getAllocations(m);
+    if(!(catId in allocs)) allocs[catId] = 0;
+    FamilyDB.saveAllocations(m, allocs);
+    Modal.close();
+    App.render();
+  },
+
+  deleteTx(id){
+    if(!confirm('Hapus transaksi ini?')) return;
+    FamilyDB.deleteTx(id);
+    App.render();
+  },
+
+  openAddTx(){
+    const cats = FamilyDB.getCategories();
+    const catOpts = cats.map(c=>`
+      <button type="button" class="cat-option" data-famcat-pick="${c.id}" onclick="FamilyApp._pickCat('${c.id}',this)">
+        ${icon(c.lucide,16,c.color)} ${c.name}
+      </button>`).join('');
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Transaksi Keluarga</div>
+      <form onsubmit="FamilyApp.submitAddTx(event)">
+        <div class="form-group">
+          <label class="form-label">Nominal</label>
+          <div class="form-amount-wrap">
+            <span class="form-amount-prefix">Rp</span>
+            <input class="form-input form-amount" id="famTxAmount" type="number" inputmode="numeric" placeholder="0" required autofocus>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <div class="cat-grid">${catOpts}</div>
+          <input type="hidden" id="famTxCat" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan</label>
+          <input class="form-input" id="famTxNote" type="text" placeholder="e.g. Alfamart, PLN...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal</label>
+          <input class="form-input" id="famTxDate" type="date" value="${today()}" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="background:#059669;">Simpan</button>
+      </form>`);
+  },
+
+  _pickCat(id, el){
+    document.querySelectorAll('[data-famcat-pick]').forEach(b=>{ b.classList.remove('selected'); b.style.background=''; b.style.color=''; });
+    const cat = FamilyDB.getCategories().find(c=>c.id===id);
+    el.classList.add('selected');
+    if(cat){ el.style.background=cat.color; el.style.color='#fff'; }
+    document.getElementById('famTxCat').value = id;
+  },
+
+  submitAddTx(e){
+    e.preventDefault();
+    const amount = parseInt(document.getElementById('famTxAmount').value||'0');
+    const cat    = document.getElementById('famTxCat').value;
+    const note   = document.getElementById('famTxNote').value.trim();
+    const date   = document.getElementById('famTxDate').value;
+    if(!amount || !cat) return;
+    FamilyDB.addTx({ id:'ftx_'+Date.now(), amount, cat, note, date });
+    Modal.close();
+    App.render();
+  },
+
+  _catForm(cat){
+    const iconGrid = CAT_ICONS.map((ic,i)=>{
+      const active = cat ? ic.lucide===cat.lucide : i===0;
+      return `<button type="button" class="icon-pick-btn${active?' active':''}" data-lucide-pick="${ic.lucide}" onclick="Modal._pickIcon('${ic.lucide}',this)">${icon(ic.lucide,18,'currentColor')}<span>${ic.label}</span></button>`;
+    }).join('');
+    const colorRow = CAT_COLORS.map((c,i)=>{
+      const active = cat ? c.color===cat.color : i===0;
+      return `<div class="color-pick-dot${active?' active':''}" data-color="${c.color}" data-bg="${c.bg}" style="background:${c.color}" onclick="Modal._pickColor('${c.color}','${c.bg}',this)"></div>`;
+    }).join('');
+    return { iconGrid, colorRow,
+      initIcon: cat?.lucide || CAT_ICONS[0].lucide,
+      initColor: cat?.color || CAT_COLORS[0].color,
+      initBg: cat?.bg || CAT_COLORS[0].bg };
+  },
+
+  openAddCat(){
+    const f = this._catForm(null);
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Tambah Kategori Keluarga</div>
+      <form onsubmit="FamilyApp.submitAddCat(event)">
+        <div class="form-group"><label class="form-label">Nama</label>
+          <input class="form-input" id="fcName" type="text" placeholder="e.g. Asuransi" required autofocus></div>
+        <div class="form-group"><label class="form-label">Icon</label>
+          <div class="icon-picker-grid">${f.iconGrid}</div>
+          <input type="hidden" id="catIcon" value="${f.initIcon}"></div>
+        <div class="form-group"><label class="form-label">Warna</label>
+          <div class="color-pick-row">${f.colorRow}</div>
+          <input type="hidden" id="catColor" value="${f.initColor}">
+          <input type="hidden" id="catBg" value="${f.initBg}"></div>
+        <button type="submit" class="btn btn-primary" style="background:#059669;">Tambah</button>
+      </form>`);
+  },
+  submitAddCat(e){
+    e.preventDefault();
+    const name   = document.getElementById('fcName').value.trim();
+    const lucide  = document.getElementById('catIcon')?.value || CAT_ICONS[0].lucide;
+    const color   = document.getElementById('catColor')?.value || CAT_COLORS[0].color;
+    const bg      = document.getElementById('catBg')?.value || CAT_COLORS[0].bg;
+    if(!name) return;
+    const cats = FamilyDB.getCategories();
+    cats.push({ id:'fam_'+Date.now(), name, lucide, color, bg });
+    FamilyDB.saveCategories(cats);
+    Modal.close(); App.render();
+  },
+
+  openEditCat(id){
+    const cats = FamilyDB.getCategories();
+    const cat = cats.find(c=>c.id===id);
+    if(!cat) return;
+    const f = this._catForm(cat);
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">Edit Kategori</div>
+      <form onsubmit="FamilyApp.submitEditCat(event,'${id}')">
+        <div class="form-group"><label class="form-label">Nama</label>
+          <input class="form-input" id="fcName" type="text" value="${cat.name}" required autofocus></div>
+        <div class="form-group"><label class="form-label">Icon</label>
+          <div class="icon-picker-grid">${f.iconGrid}</div>
+          <input type="hidden" id="catIcon" value="${f.initIcon}"></div>
+        <div class="form-group"><label class="form-label">Warna</label>
+          <div class="color-pick-row">${f.colorRow}</div>
+          <input type="hidden" id="catColor" value="${f.initColor}">
+          <input type="hidden" id="catBg" value="${f.initBg}"></div>
+        <div class="form-group"><label class="form-label">Saldo Awal (opsional)</label>
+          <div class="form-amount-wrap"><span class="form-amount-prefix">Rp</span>
+          <input class="form-input form-amount" id="fcInitBal" type="number" inputmode="numeric" value="${cat.initialBalance||''}" placeholder="0"></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Saldo yang sudah ada sebelum mulai tracking</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button type="submit" class="btn btn-primary" style="background:#059669;flex:1;">Simpan</button>
+          <button type="button" onclick="FamilyApp.deleteCat('${id}')"
+            style="flex-shrink:0;border:none;border-radius:var(--radius-sm);padding:0 16px;background:#fee2e2;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;">Hapus</button>
+        </div>
+      </form>`);
+  },
+  submitEditCat(e, id){
+    e.preventDefault();
+    const name    = document.getElementById('fcName').value.trim();
+    const lucide   = document.getElementById('catIcon')?.value;
+    const color    = document.getElementById('catColor')?.value;
+    const bg       = document.getElementById('catBg')?.value;
+    const initBal  = parseInt(document.getElementById('fcInitBal')?.value||'0')||0;
+    if(!name) return;
+    const cats = FamilyDB.getCategories();
+    const idx = cats.findIndex(c=>c.id===id);
+    if(idx>=0) cats[idx] = { ...cats[idx], name, lucide, color, bg, ...(initBal?{initialBalance:initBal}:{}) };
+    FamilyDB.saveCategories(cats);
+    Modal.close(); App.render();
+  },
+  deleteCat(id){
+    if(!confirm('Hapus kategori ini?')) return;
+    const cats = FamilyDB.getCategories().filter(c=>c.id!==id);
+    if(!cats.length){ alert('Minimal satu kategori.'); return; }
+    FamilyDB.saveCategories(cats);
+    Modal.close(); App.render();
+  },
+};
+
+// ── Supabase config ────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://uwgjgtpboaqejovfllcn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3Z2pndHBib2FxZWpvdmZsbGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTQ3MzQsImV4cCI6MjA5Njg5MDczNH0.Kr_sh3lqI1_DX_G-QC7aibEMiZJU65cOrepK2vwnBaE';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── Sync indicator ──────────────────────────────────────────────────
+const SyncDot = {
+  el(){ return document.getElementById('syncDot'); },
+  ok()   { const e=this.el(); if(e){ e.className=''; e.style.background='#16a34a'; } },
+  busy() { const e=this.el(); if(e){ e.className='syncing'; } },
+  err()  { const e=this.el(); if(e){ e.className='error'; } },
+};
+
+// ── Sync Manager ────────────────────────────────────────────────────
+const Sync = {
+  _familyId: null,
+  _userId: null,
+  _timer: null,
+  _dirty: new Set(),
+
+  // Keys owned by personal vs family
+  _personalKeys: ['emir_months','emir_categories','emir_tx'],
+  _familyKeys:   ['family_months','family_categories','family_tx'],
+
+  // Install localStorage proxy — called once after auth
+  installProxy(){
+    const _orig = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = (key, value) => {
+      _orig(key, value);
+      if(this._personalKeys.includes(key) || this._familyKeys.includes(key)){
+        this._dirty.add(key);
+        this._schedule();
+      }
+    };
+  },
+
+  _schedule(){
+    SyncDot.busy();
+    clearTimeout(this._timer);
+    this._timer = setTimeout(()=>this._flush(), 1200);
+  },
+
+  async _flush(){
+    try {
+      // Personal data
+      const personalDirty = [...this._dirty].some(k=>this._personalKeys.includes(k));
+      if(personalDirty && this._userId){
+        await _sb.from('user_data').upsert({
+          user_id: this._userId,
+          months:       JSON.parse(localStorage.getItem('emir_months')||'{}'),
+          categories:   JSON.parse(localStorage.getItem('emir_categories')||'[]'),
+          transactions: JSON.parse(localStorage.getItem('emir_tx')||'[]'),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      }
+      // Family data
+      const familyDirty = [...this._dirty].some(k=>this._familyKeys.includes(k));
+      if(familyDirty && this._familyId){
+        await _sb.from('family_data').upsert({
+          family_id: this._familyId,
+          months:       JSON.parse(localStorage.getItem('family_months')||'{}'),
+          categories:   JSON.parse(localStorage.getItem('family_categories')||'[]'),
+          transactions: JSON.parse(localStorage.getItem('family_tx')||'[]'),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'family_id' });
+      }
+      this._dirty.clear();
+      SyncDot.ok();
+    } catch(e) {
+      console.error('Sync error', e);
+      SyncDot.err();
+    }
+  },
+
+  // Load all cloud data into localStorage, then boot app
+  async loadAndBoot(userId, familyId){
+    this._userId = userId;
+    this._familyId = familyId;
+
+    try {
+      // Load personal data
+      const { data: ud } = await _sb.from('user_data').select('*').eq('user_id', userId).maybeSingle();
+      if(ud){
+        localStorage.setItem('emir_months',       JSON.stringify(ud.months       || {}));
+        localStorage.setItem('emir_categories',   JSON.stringify(ud.categories   || []));
+        localStorage.setItem('emir_tx',           JSON.stringify(ud.transactions || []));
+      }
+      // Load family data
+      if(familyId){
+        const { data: fd } = await _sb.from('family_data').select('*').eq('family_id', familyId).maybeSingle();
+        if(fd){
+          localStorage.setItem('family_months',     JSON.stringify(fd.months       || {}));
+          localStorage.setItem('family_categories', JSON.stringify(fd.categories   || []));
+          localStorage.setItem('family_tx',         JSON.stringify(fd.transactions || []));
+        }
+      }
+    } catch(e){ console.warn('Load from cloud failed, using local data', e); }
+
+    // Now install proxy so future writes sync back
+    this.installProxy();
+    SyncDot.ok();
+  },
+
+  // Migrate existing localStorage data to cloud (first login only)
+  async migrate(userId, familyId){
+    const hasCloud = await _sb.from('user_data').select('user_id').eq('user_id', userId).maybeSingle();
+    if(hasCloud.data) return false; // already migrated
+
+    const months       = JSON.parse(localStorage.getItem('emir_months')||'{}');
+    const categories   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+    const transactions = JSON.parse(localStorage.getItem('emir_tx')||'[]');
+    const hasLocal = Object.keys(months).length || categories.length || transactions.length;
+    if(!hasLocal) return false;
+
+    if(!confirm(`Ditemukan data lokal (${Object.keys(months).length} bulan, ${transactions.length} transaksi). Sync ke cloud sekarang?`)) return false;
+
+    await _sb.from('user_data').insert({ user_id: userId, months, categories, transactions });
+    if(familyId){
+      const fm = JSON.parse(localStorage.getItem('family_months')||'{}');
+      const fc = JSON.parse(localStorage.getItem('family_categories')||'[]');
+      const ft = JSON.parse(localStorage.getItem('family_tx')||'[]');
+      const hasFamLocal = Object.keys(fm).length || fc.length || ft.length;
+      if(hasFamLocal){
+        const famExists = await _sb.from('family_data').select('family_id').eq('family_id', familyId).maybeSingle();
+        if(!famExists.data){
+          await _sb.from('family_data').insert({ family_id: familyId, months: fm, categories: fc, transactions: ft });
+        }
+      }
+    }
+    return true;
+  },
+};
+
+// ── Auth ────────────────────────────────────────────────────────────
+const Auth = {
+  _user: null,
+
+  async init(){
+    const { data: { session } } = await _sb.auth.getSession();
+    if(session?.user){
+      await this._onLogin(session.user);
+    } else {
+      this._showScreen();
+    }
+    _sb.auth.onAuthStateChange(async (event, session) => {
+      if(event === 'SIGNED_IN' && session?.user)  await this._onLogin(session.user);
+      if(event === 'SIGNED_OUT') location.reload();
+    });
+  },
+
+  async _onLogin(user){
+    this._user = user;
+    const name = user.user_metadata?.name || user.email?.split('@')[0] || '?';
+    const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const av = document.getElementById('headerAvatar');
+    if(av) av.textContent = initials;
+
+    // Get or create family membership
+    const familyId = await this._getFamilyId(user.id);
+
+    // Migrate then load
+    await Sync.migrate(user.id, familyId);
+    await Sync.loadAndBoot(user.id, familyId);
+
+    document.getElementById('authScreen').classList.add('hidden');
+    App.init();
+  },
+
+  async _getFamilyId(userId){
+    const { data } = await _sb.from('family_members').select('family_id').eq('user_id', userId).maybeSingle();
+    return data?.family_id || null;
+  },
+
+  _showScreen(){
+    document.getElementById('authScreen').classList.remove('hidden');
+  },
+
+  showLogin(){
+    document.getElementById('authErr').textContent = '';
+  },
+
+  async login(){
+    const email = document.getElementById('authEmail').value.trim();
+    const pass  = document.getElementById('authPassword').value;
+    const btn   = document.getElementById('authLoginBtn');
+    const err   = document.getElementById('authErr');
+    if(!email||!pass){ err.textContent='Email dan password wajib diisi.'; return; }
+    btn.disabled = true; btn.querySelector('span').textContent = 'Masuk...';
+    const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+    btn.disabled = false; btn.querySelector('span').textContent = 'Masuk';
+    if(error) err.textContent = error.message === 'Invalid login credentials'
+      ? 'Email atau password salah.' : error.message;
+  },
+
+
+  showMenu(){
+    const user = this._user;
+    const name = user?.user_metadata?.name || user?.email || 'Pengguna';
+    if(confirm(`Login sebagai: ${name}\n\nKeluar dari akun?`)) this.logout();
+  },
+
+  async logout(){
+    await _sb.auth.signOut();
+  },
+};
+
+// ── Boot ─────────────────────────────────────────────────────────────
+Auth.init();
+</script>
+</body>
+</html>
