@@ -1520,7 +1520,7 @@ const Render = {
       }).join('')}
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 4px;padding:0 16px;">
-      ${incomes.map((e,i)=>`<div class="income-dot${e.id===activeId?' active':''}" id="heroDot_${e.id}" onclick="App.selectIncome('${e.id}',${i})" style="${e.id===activeId?(i===0?'background:#2563eb;':'i===1?background:#7c3aed;':'background:#059669;'):''}"></div>`).join('')}
+      ${incomes.map((e,i)=>`<div class="income-dot${e.id===activeId?' active':''}" id="heroDot_${e.id}" onclick="App.selectIncome('${e.id}',${i})" style="${e.id===activeId?(i===0?'background:#2563eb;':i===1?'background:#7c3aed;':'background:#059669;'):''}"></div>`).join('')}
       ${canAddMore?`
         <button onclick="Modal.openAddIncome()"
           style="display:flex;align-items:center;gap:5px;background:var(--blue-light);color:var(--blue);border:none;border-radius:99px;padding:5px 12px 5px 8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">
