@@ -725,7 +725,7 @@ body {
 <body>
 
 <!-- ── Auth Screen ── -->
-<div id="authScreen">
+<div id="authScreen" class="hidden">
   <div class="auth-logo">
     <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
   </div>
@@ -750,6 +750,16 @@ body {
     </div>
   </div>
 </div>
+
+<div id="appLoading" style="position:fixed;inset:0;z-index:9998;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    </div>
+    <div style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;"></div>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <div class="app">
   <header class="app-header">
@@ -3082,15 +3092,23 @@ const Auth = {
   _user: null,
 
   async init(){
-    const { data: { session } } = await _sb.auth.getSession();
-    if(session?.user){
-      await this._onLogin(session.user);
-    } else {
+    const hideLoading = () => { const el=document.getElementById('appLoading'); if(el) el.style.display='none'; };
+    try {
+      const { data: { session } } = await _sb.auth.getSession();
+      if(session?.user){
+        await this._onLogin(session.user);
+      } else {
+        hideLoading();
+        this._showScreen();
+      }
+    } catch(e) {
+      console.error('Auth init error', e);
+      hideLoading();
       this._showScreen();
     }
     _sb.auth.onAuthStateChange(async (event, session) => {
       if(event === 'SIGNED_IN' && session?.user)  await this._onLogin(session.user);
-      if(event === 'SIGNED_OUT') location.reload();
+      if(event === 'SIGNED_OUT'){ hideLoading(); location.reload(); }
     });
   },
 
@@ -3109,6 +3127,8 @@ const Auth = {
     await Sync.loadAndBoot(user.id, familyId);
 
     document.getElementById('authScreen').classList.add('hidden');
+    const loading = document.getElementById('appLoading');
+    if(loading) loading.style.display = 'none';
     App.init();
   },
 
