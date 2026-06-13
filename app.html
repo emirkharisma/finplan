@@ -1096,6 +1096,7 @@ function updateAllocChart(){
 // ── App ──────────────────────────────────────────────────────────
 const App = {
   init(){
+    loadCategories(); // reload after Supabase data is in localStorage
     document.getElementById('monthLabel').textContent=mLabel(State.month);
     document.getElementById('prevMonth').onclick=()=>this.changeMonth(-1);
     document.getElementById('nextMonth').onclick=()=>this.changeMonth(1);
