@@ -1025,16 +1025,20 @@ function updateFamAllocChart(){
 }
 
 let _allocChart = null;
+// Get allocations for the active income (or merged if no activeId)
+function _getActiveAllocForChart(){
+  const incomes = DB.getIncomes(State.month);
+  const active = incomes.find(e => e.id === State.activeIncomeId) || incomes[0];
+  return active?.allocations || {};
+}
+
 function initAllocChart(){
   const canvas = document.getElementById('allocChart');
   if(!canvas) return;
   if(_allocChart){ _allocChart.destroy(); _allocChart=null; }
   const cats = CATEGORIES.filter(c=>c.id!=='lainnya');
-  // use merged allocations from all income sources
-  const incomes = DB.getIncomes(State.month);
-  const mergedAlloc = {};
-  incomes.forEach(e=>{ Object.entries(e.allocations||{}).forEach(([k,v])=>{ mergedAlloc[k]=(mergedAlloc[k]||0)+(v||0); }); });
-  const values = cats.map(c=>mergedAlloc[c.id]||0);
+  const alloc = _getActiveAllocForChart();
+  const values = cats.map(c=>alloc[c.id]||0);
   const hasData = values.some(v=>v>0);
   _allocChart = new Chart(canvas, {
     type: 'doughnut',
@@ -1058,7 +1062,7 @@ function initAllocChart(){
         tooltip:{
           enabled: hasData,
           callbacks:{
-            label: ctx => ` ${fmtRp(ctx.raw)}  (${Math.round(ctx.raw/values.reduce((a,b)=>a+b,0)*100)}%)`
+            label: ctx => { const t=values.reduce((a,b)=>a+b,0); return ` ${fmtRp(ctx.raw)}  (${t>0?Math.round(ctx.raw/t*100):0}%)`; }
           },
           backgroundColor:'#1f2937',
           padding:10,
@@ -1070,20 +1074,17 @@ function initAllocChart(){
       animation:{ duration: 400, easing:'easeInOutQuart' }
     }
   });
+  // update center label
+  const total = values.reduce((a,b)=>a+b,0);
+  const center = document.getElementById('chartCenter');
+  if(center) center.querySelector('div:last-child').textContent = fmtRp(total);
 }
 
 function updateAllocChart(){
   if(!_allocChart) return;
-  // Always use DB values for all incomes so merged totals are always correct
-  const incomes = DB.getIncomes(State.month);
-  const mergedAlloc = {};
-  incomes.forEach(inc => {
-    Object.entries(inc.allocations||{}).forEach(([k,v]) => {
-      mergedAlloc[k] = (mergedAlloc[k]||0) + (v||0);
-    });
-  });
-  const cats = CATEGORIES.filter(c => c.id !== 'lainnya');
-  const values = cats.map(c => mergedAlloc[c.id]||0);
+  const cats = CATEGORIES.filter(c=>c.id!=='lainnya');
+  const alloc = _getActiveAllocForChart();
+  const values = cats.map(c=>alloc[c.id]||0);
   const total = values.reduce((a,b)=>a+b,0);
   const hasData = values.some(v=>v>0);
   _allocChart.data.labels = cats.map(c=>c.name);
@@ -1531,22 +1532,22 @@ const Render = {
     </div>
     </div>
 
-    <!-- ── Pie chart ── -->
+    <!-- ── Pie chart (active income) ── -->
     <div class="section-flat" style="margin-bottom:10px;">
       <div style="padding:18px 18px 14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div style="font-size:15px;font-weight:700;letter-spacing:-.02em;">Komposisi Alokasi</div>
-          ${incomes.length>1?`<div style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:99px;padding:3px 10px;">Gabungan ${incomes.length} sumber</div>`:''}
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border-radius:99px;padding:3px 10px;">${active?.label||'Pemasukan'}</div>
         </div>
         <div style="position:relative;width:220px;height:220px;margin:0 auto 14px;">
           <canvas id="allocChart"></canvas>
           <div id="chartCenter" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);">Total</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text);text-align:center;line-height:1.3;">${fmtRp(totalAlloc)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text);text-align:center;line-height:1.3;">${fmtRp(activeAlloc)}</div>
           </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;">
-          ${CATEGORIES.filter(c=>c.id!=='lainnya'&&(mergedAlloc[c.id]||0)>0).map(c=>`
+          ${CATEGORIES.filter(c=>c.id!=='lainnya'&&(active?.allocations?.[c.id]||0)>0).map(c=>`
             <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted);">
               <span style="width:7px;height:7px;border-radius:50%;background:${c.color};flex-shrink:0;display:inline-block;"></span>
               ${c.name}
