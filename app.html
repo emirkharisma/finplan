@@ -751,16 +751,6 @@ body {
   </div>
 </div>
 
-<div id="appLoading" style="position:fixed;inset:0;z-index:9998;background:var(--bg);display:flex;align-items:center;justify-content:center;">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-    <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;">
-      <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-    </div>
-    <div style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;"></div>
-  </div>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-
 <div class="app">
   <header class="app-header">
     <a href="index.html" class="back-btn">
@@ -3093,52 +3083,35 @@ const Auth = {
   _user: null,
 
   async init(){
-    const hideLoading = () => { const el=document.getElementById('appLoading'); if(el) el.style.display='none'; };
     try {
       const { data: { session } } = await _sb.auth.getSession();
-      if(session?.user){
-        await this._onLogin(session.user);
-      } else {
-        hideLoading();
-        this._showScreen();
-      }
+      if(session?.user) await this._onLogin(session.user);
+      else this._showScreen();
     } catch(e) {
       console.error('Auth init error', e);
-      hideLoading();
       this._showScreen();
     }
     _sb.auth.onAuthStateChange(async (event, session) => {
-      if(event === 'SIGNED_IN' && session?.user)  await this._onLogin(session.user);
-      if(event === 'SIGNED_OUT'){ hideLoading(); location.reload(); }
+      if(event === 'SIGNED_IN' && session?.user) await this._onLogin(session.user);
+      if(event === 'SIGNED_OUT') location.reload();
     });
   },
 
   async _onLogin(user){
-    const hideLoading = () => {
-      const el = document.getElementById('appLoading');
-      if(el) el.style.display = 'none';
-    };
     try {
       this._user = user;
       const name = user.user_metadata?.name || user.email?.split('@')[0] || '?';
       const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const av = document.getElementById('headerAvatar');
       if(av) av.textContent = initials;
-
       const familyId = await this._getFamilyId(user.id);
       await Sync.migrate(user.id, familyId);
       await Sync.loadAndBoot(user.id, familyId);
-
-      document.getElementById('authScreen').classList.add('hidden');
-      hideLoading();
-      App.init();
     } catch(e) {
       console.error('_onLogin error:', e);
-      hideLoading();
-      // Boot app anyway with local data
-      document.getElementById('authScreen').classList.add('hidden');
-      App.init();
     }
+    document.getElementById('authScreen').classList.add('hidden');
+    App.init();
   },
 
   async _getFamilyId(userId){
@@ -3180,22 +3153,7 @@ const Auth = {
 };
 
 // ── Boot ─────────────────────────────────────────────────────────────
-function bootApp(){
-  if(typeof supabase === 'undefined' || typeof _sb === 'undefined'){
-    // Supabase CDN failed — hide loading, show login with error
-    const el = document.getElementById('appLoading');
-    if(el) el.style.display = 'none';
-    document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('authErr').textContent = 'Gagal load library. Coba refresh.';
-    return;
-  }
-  Auth.init();
-}
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', bootApp);
-} else {
-  bootApp();
-}
+Auth.init();
 </script>
 </body>
 </html>
