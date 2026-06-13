@@ -2957,7 +2957,8 @@ const FamilyApp = {
 // ── Supabase config ────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://uwgjgtpboaqejovfllcn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3Z2pndHBib2FxZWpvdmZsbGNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTQ3MzQsImV4cCI6MjA5Njg5MDczNH0.Kr_sh3lqI1_DX_G-QC7aibEMiZJU65cOrepK2vwnBaE';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let _sb;
+try { _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON); } catch(e){ console.error('Supabase init failed', e); }
 
 // ── Sync indicator ──────────────────────────────────────────────────
 const SyncDot = {
@@ -3179,7 +3180,22 @@ const Auth = {
 };
 
 // ── Boot ─────────────────────────────────────────────────────────────
-Auth.init();
+function bootApp(){
+  if(typeof supabase === 'undefined' || typeof _sb === 'undefined'){
+    // Supabase CDN failed — hide loading, show login with error
+    const el = document.getElementById('appLoading');
+    if(el) el.style.display = 'none';
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('authErr').textContent = 'Gagal load library. Coba refresh.';
+    return;
+  }
+  Auth.init();
+}
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+  bootApp();
+}
 </script>
 </body>
 </html>
