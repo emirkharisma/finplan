@@ -1499,7 +1499,7 @@ const Render = {
         const rem = (inc.amount||0) - alloc;
         const pct = inc.amount>0 ? Math.min(alloc/inc.amount*100,100) : 0;
         const remTxt = inc.amount>0 ? (rem>0?`Sisa ${fmtRp(rem)}`:(rem<0?`Over ${fmtRp(Math.abs(rem))}`:'Penuh ✓')) : 'Alokasi belum diset';
-        return `<div class="income-hero" data-id="${inc.id}" data-idx="${i}" style="background:${CARD_COLORS[i%CARD_COLORS.length]};box-shadow:${CARD_SHADOWS[i%CARD_SHADOWS.length]};">
+        return `<div class="income-hero" data-id="${inc.id}" data-idx="${i}" onclick="App.selectIncome('${inc.id}',${i})" style="background:${CARD_COLORS[i%CARD_COLORS.length]};box-shadow:${CARD_SHADOWS[i%CARD_SHADOWS.length]};cursor:pointer;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
             <div class="income-hero-label">${inc.label} · ${mFull(State.month)}</div>
             <div style="display:flex;gap:4px;">
