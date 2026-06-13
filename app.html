@@ -2977,11 +2977,13 @@ const Sync = {
   _personalKeys: ['emir_months','emir_categories','emir_tx'],
   _familyKeys:   ['family_months','family_categories','family_tx'],
 
+  _lsSet: null, // original localStorage.setItem, saved before proxy
+
   // Install localStorage proxy — called once after auth
   installProxy(){
-    const _orig = localStorage.setItem.bind(localStorage);
+    this._lsSet = localStorage.setItem.bind(localStorage);
     localStorage.setItem = (key, value) => {
-      _orig(key, value);
+      this._lsSet(key, value);
       if(this._personalKeys.includes(key) || this._familyKeys.includes(key)){
         this._dirty.add(key);
         this._schedule();
@@ -3053,7 +3055,30 @@ const Sync = {
 
     // Now install proxy so future writes sync back
     this.installProxy();
+    // Subscribe to real-time family data changes from the other user
+    if(familyId) this._subscribeFamily(familyId);
     SyncDot.ok();
+  },
+
+  _subscribeFamily(familyId){
+    _sb.channel('family_data:' + familyId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'family_data',
+        filter: `family_id=eq.${familyId}`,
+      }, payload => {
+        const fd = payload.new;
+        if(!fd) return;
+        // Write directly (bypass proxy so we don't echo back to Supabase)
+        const set = this._lsSet || localStorage.setItem.bind(localStorage);
+        set('family_months',     JSON.stringify(fd.months       || {}));
+        set('family_categories', JSON.stringify(fd.categories   || []));
+        set('family_tx',         JSON.stringify(fd.transactions || []));
+        // Re-render so UI reflects remote change
+        App.render();
+      })
+      .subscribe();
   },
 
   // Migrate existing localStorage data to cloud (first login only)
