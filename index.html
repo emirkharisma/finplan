@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#7c6fff">
+<title>FamFinance — Decision Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface2: #f3f4f6;
+  --border: #e5e7eb;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --purple: #7c6fff;
+  --teal: #0d9488;
+  --amber: #d97706;
+  --pink: #db2777;
+  --blue: #2563eb;
+  --green: #059669;
+  --red: #dc2626;
+  --orange: #ea580c;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Layout ── */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+/* ── Header ── */
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.dash-title { font-size: 22px; font-weight: 700; color: var(--text); }
+.dash-sub { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+.dash-badge {
+  background: #ede9fe;
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ── Alert box ── */
+.alert {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-title { font-weight: 600; color: #92400e; font-size: 13px; margin-bottom: 6px; }
+.alert-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.alert-list li { font-size: 12px; color: #78350f; display: flex; gap: 8px; }
+.alert-list li::before { content: "▸"; color: var(--amber); flex-shrink: 0; }
+
+/* ── Section label ── */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+  margin-top: 8px;
+}
+
+/* ── KPI Grid ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 18px 14px;
+  box-shadow: var(--shadow);
+  border-top: 2px solid transparent;
+  position: relative;
+}
+.kpi-card.kpi-purple { border-top-color: var(--purple); }
+.kpi-card.kpi-teal   { border-top-color: var(--teal); }
+.kpi-card.kpi-amber  { border-top-color: var(--amber); }
+.kpi-card.kpi-blue   { border-top-color: var(--blue); }
+.kpi-card.kpi-green  { border-top-color: var(--green); }
+.kpi-card.kpi-red    { border-top-color: var(--red); }
+.kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; line-height: 1.1; }
+.kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+.kpi-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+.tag-up { background: #dcfce7; color: var(--green); }
+.tag-down { background: #fee2e2; color: var(--red); }
+.tag-warn { background: #fef3c7; color: var(--amber); }
+.tag-info { background: #ede9fe; color: var(--purple); }
+
+/* ── 2-col grid ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.full-col { margin-bottom: 16px; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* ── Allocation bars ── */
+.alloc-list { display: flex; flex-direction: column; gap: 10px; }
+.alloc-row { display: flex; flex-direction: column; gap: 4px; }
+.alloc-head { display: flex; justify-content: space-between; align-items: center; }
+.alloc-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.alloc-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; }
+.alloc-track { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.alloc-fill { height: 100%; border-radius: 99px; }
+.alloc-note { font-size: 10px; color: var(--text-faint); }
+
+/* ── Chart container ── */
+.chart-wrap { position: relative; }
+
+/* ── Monthly detail table ── */
+.detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.detail-table th {
+  text-align: right;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-faint);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.detail-table th:first-child { text-align: left; }
+.detail-table td {
+  text-align: right;
+  padding: 7px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--surface2);
+}
+.detail-table td:first-child {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+}
+.detail-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--text); }
+.detail-table .hi { color: var(--red); }
+.detail-table .lo { color: var(--green); }
+
+/* ── Fixed costs table ── */
+.fixed-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.fixed-table tr { border-bottom: 1px solid var(--surface2); }
+.fixed-table tr:last-child { border-bottom: none; }
+.fixed-table td { padding: 8px 4px; }
+.fixed-table .fc-name { font-weight: 500; color: var(--text); font-size: 12px; }
+.fixed-table .fc-note { font-size: 10px; color: var(--text-muted); display: block; margin-top: 1px; }
+.fixed-table .fc-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: right;
+}
+.fixed-table .fc-freq {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Insight cards ── */
+.insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.insight-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+}
+.insight-card.ic-green { border-left-color: var(--green); }
+.insight-card.ic-amber { border-left-color: var(--amber); }
+.insight-card.ic-red   { border-left-color: var(--red); }
+.insight-card.ic-blue  { border-left-color: var(--blue); }
+.insight-card.ic-purple { border-left-color: var(--purple); }
+.insight-card.ic-teal  { border-left-color: var(--teal); }
+.insight-icon { font-size: 18px; margin-bottom: 6px; }
+.insight-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.insight-body { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── PLN grid ── */
+.pln-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.pln-month {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.pln-m { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+.pln-kwh { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: var(--text); }
+.pln-rp { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.pln-bar-wrap { height: 4px; background: var(--border); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+.pln-bar { height: 100%; border-radius: 99px; background: var(--amber); }
+
+/* ── Merchant rows ── */
+.merch-list { display: flex; flex-direction: column; gap: 2px; }
+.merch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--surface2);
+}
+.merch-row:last-child { border-bottom: none; }
+.merch-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  width: 18px;
+  flex-shrink: 0;
+}
+.merch-name { font-size: 12px; font-weight: 500; flex: 1; }
+.merch-count { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+.merch-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; text-align: right; white-space: nowrap; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 8px 0 20px; }
+
+/* ── Footer ── */
+.dash-footer {
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 11px;
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .three-col { grid-template-columns: 1fr 1fr; }
+  .insight-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .pln-grid { grid-template-columns: repeat(3, 1fr); }
+  .insight-grid { grid-template-columns: 1fr; }
+  .page { padding: 16px 14px 40px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">💰 FamFinance Dashboard</div>
+      <div class="dash-sub">Emir · Liquid Money Jago · Mar 2024 – Jun 2026 · 868 transaksi</div>
+    </div>
+    <span class="dash-badge">Terakhir diperbarui: Jun 2026</span>
+  </div>
+
+  <!-- PWA Links -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <a href="emir.html" style="
+      display:flex;align-items:center;gap:10px;flex:1;min-width:160px;
+      background:#fff;border:1px solid #e5e7eb;border-radius:12px;
+      padding:14px 16px;text-decoration:none;color:#111827;
+      box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .15s;
+    ">
+      <div style="width:36px;height:36px;border-radius:10px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c6fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;">Keuangan Emir</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:1px;">Input & laporan bulanan</div>
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+    <a href="#" style="
+      display:flex;align-items:center;gap:10px;flex:1;min-width:160px;
+      background:#fff;border:1px dashed #e5e7eb;border-radius:12px;
+      padding:14px 16px;text-decoration:none;color:#9ca3af;
+      box-shadow:0 1px 3px rgba(0,0,0,.04);opacity:.7;
+    ">
+      <div style="width:36px;height:36px;border-radius:10px;background:#fce7f3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#db2777" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#111827;">Keuangan Mayang</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:1px;">Segera hadir</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Confirmed facts -->
+  <div class="alert" style="background:#f0fdf4; border-color:#86efac; border-left-color:#059669;">
+    <div class="alert-icon">✅</div>
+    <div>
+      <div class="alert-title" style="color:#14532d;">Data sudah dikonfirmasi</div>
+      <ul class="alert-list">
+        <li style="color:#166534;">PLN dibayar via Tokopedia — terlihat sebagai transaksi Tokopedia di mutasi Jago. Total Tokopedia = PLN + belanja online.</li>
+        <li style="color:#166534;">Rp 317.460/bln = langganan internet FirstMedia — sudah masuk sebagai biaya tetap bulanan.</li>
+        <li style="color:#166534;">GoPay Rp 1.517.770 Maret 2026 = one-off event — tidak dihitung sebagai pengeluaran rutin.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="section-label">Ringkasan Keuangan</div>
+  <div class="kpi-grid" style="margin-bottom:24px;">
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-label">Rata-rata Pengeluaran/Bln</div>
+      <div class="kpi-value mono">2,40jt</div>
+      <div class="kpi-sub">dari rekening Jago saja</div>
+      <span class="kpi-tag tag-info">excl. PLN & manual</span>
+    </div>
+    <div class="kpi-card kpi-amber">
+      <div class="kpi-label">Biaya Tetap Bulanan</div>
+      <div class="kpi-value mono">~830rb</div>
+      <div class="kpi-sub">PLN 376rb + FirstMedia 317rb + Sampah + Gas</div>
+      <span class="kpi-tag tag-warn">wajib tiap bulan</span>
+    </div>
+    <div class="kpi-card kpi-teal">
+      <div class="kpi-label">Internet FirstMedia</div>
+      <div class="kpi-value mono">317rb</div>
+      <div class="kpi-sub">dibayar via Tokopedia, tiap bulan</div>
+      <span class="kpi-tag tag-info">biaya tetap ✓</span>
+    </div>
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-label">Rekomendasi Budget/Bln</div>
+      <div class="kpi-value mono">3,50jt</div>
+      <div class="kpi-sub">incl. semua biaya tetap + variabel + buffer</div>
+      <span class="kpi-tag tag-up">termasuk 10% buffer</span>
+    </div>
+  </div>
+
+  <!-- Monthly Trend + Donut -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Tren Pengeluaran Bulanan</div>
+      <div class="card-sub">Jul 2025 – Jun 2026 (dari rekening Jago)</div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="chartTrend"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Komposisi Pengeluaran</div>
+      <div class="card-sub">Rata-rata per kategori (12 bulan terakhir)</div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="chartDonut"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Allocation Guide -->
+  <div class="section-label">Panduan Alokasi Bulanan</div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Alokasi yang Disarankan</div>
+      <div class="card-sub">Berdasarkan pola 12 bulan terakhir + buffer</div>
+      <div class="alloc-list" id="allocList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Budget Breakdown</div>
+      <div class="card-sub">Visualisasi proporsi per kategori</div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartAlloc"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLN Section -->
+  <div class="section-label">Listrik (PLN) — Rumah Anggrek · ID 5471-0252-2532</div>
+  <div class="card full-col" style="margin-bottom:16px;">
+    <div class="card-title">Konsumsi & Tagihan PLN Jan–Jun 2026</div>
+    <div class="card-sub">Data dari screenshot tagihan. Rata-rata: 376.583/bln · Tertinggi: Jul (est 450rb)</div>
+    <div class="pln-grid" id="plnGrid"></div>
+    <div style="margin-top:14px; display:flex; gap:24px; flex-wrap:wrap;">
+      <div>
+        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em;">Total Jan–Jun 2026</div>
+        <div class="mono" style="font-size:18px; font-weight:700; margin-top:2px;">Rp 2.259.500</div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em;">Rata-rata/bulan</div>
+        <div class="mono" style="font-size:18px; font-weight:700; margin-top:2px;">Rp 376.583</div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em;">Budget rekomendasi PLN</div>
+        <div class="mono" style="font-size:18px; font-weight:700; color:var(--amber); margin-top:2px;">Rp 420.000</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fixed Costs + Top Merchants -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Biaya Tetap Teridentifikasi</div>
+      <div class="card-sub">Rutin muncul setiap bulan dari data transaksi</div>
+      <table class="fixed-table" id="fixedTable"></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Merchant / Tujuan Transfer</div>
+      <div class="card-sub">Berdasarkan total nilai transaksi</div>
+      <div class="merch-list" id="merchList"></div>
+    </div>
+  </div>
+
+  <!-- Monthly Detail Table -->
+  <div class="section-label">Detail Bulanan per Kategori</div>
+  <div class="card full-col" style="margin-bottom:16px; overflow-x:auto;">
+    <div class="card-title">Pengeluaran per Kategori — Jul 2025 s/d Jun 2026</div>
+    <div class="card-sub">Semua nilai dalam ribuan rupiah (rb). Merah = tertinggi dalam kategori, hijau = terendah.</div>
+    <table class="detail-table" id="detailTable"></table>
+  </div>
+
+  <!-- Insights -->
+  <div class="section-label">Key Insights & Rekomendasi</div>
+  <div class="insight-grid" id="insightGrid"></div>
+
+  <div class="dash-footer">
+    FamFinance · Data: Jago Liquid Money statement + PLN screenshot · Dibuat dengan ❤️ untuk Emir & Mayang
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+
+const TREND_DATA = {
+  labels: ['Jul 25','Agu 25','Sep 25','Okt 25','Nov 25','Des 25','Jan 26','Feb 26','Mar 26','Apr 26','Mei 26','Jun 26'],
+  values: [2180000, 1950000, 2340000, 2760000, 2890000, 3120000, 2430000, 2150000, 3580000, 2640000, 2280000, 2710000]
+};
+
+const ALLOC_DATA = [
+  { name: 'PLN (Listrik)',       val: 420000, color: '#d97706', note: 'avg 376rb + buffer 10% — via Tokopedia' },
+  { name: 'FirstMedia Internet', val: 320000, color: '#f59e0b', note: 'langganan bulanan via Tokopedia — 317rb' },
+  { name: 'Makan & Grocery',      val: 700000, color: '#7c6fff', note: 'Makan, GoFood, Superindo, Alfamart, Tokopedia' },
+  { name: 'Rumah Tangga',         val: 385000, color: '#db2777', note: 'Teh Ima 300rb + Sampah 45rb + Gas LPG ~40rb' },
+  { name: 'Buffer / Tak Terduga', val: 175000, color: '#9ca3af', note: 'dana darurat bulanan' },
+];
+
+const PLN_DATA = [
+  { m: 'Jan', kwh: 226, rp: 370000 },
+  { m: 'Feb', kwh: 213, rp: 349500 },
+  { m: 'Mar', kwh: 241, rp: 395000 },
+  { m: 'Apr', kwh: 228, rp: 374000 },
+  { m: 'Mei', kwh: 219, rp: 359500 },
+  { m: 'Jun', kwh: 257, rp: 411500 },
+];
+
+const FIXED_COSTS = [
+  { name: 'PLN Listrik',         note: 'Rumah Anggrek · dibayar via Tokopedia', val: '~376.000', freq: '/bln', flag: false },
+  { name: 'FirstMedia Internet', note: 'langganan internet · via Tokopedia',     val: '317.460',  freq: '/bln', flag: false },
+  { name: 'Sampah',              note: 'iuran warga',                            val: '~45.000',  freq: '/bln', flag: false },
+  { name: 'Gas LPG',             note: 'refill 3kg',                             val: '20–54rb',  freq: '/bln', flag: false },
+];
+
+const TOP_MERCHANTS = [
+  { rank: '01', name: 'Tokopedia (total)',      count: 'PLN + FirstMedia + belanja', val: '2.840.000', color: '#2563eb' },
+  { rank: '02', name: '└ PLN via Tokopedia',    count: 'incl. di atas',              val: '~376rb/bln', color: '#d97706' },
+  { rank: '03', name: '└ FirstMedia via Tokopedia', count: 'incl. di atas',          val: '317rb/bln',  color: '#f59e0b' },
+  { rank: '04', name: 'GoPay / GoFood',         count: '52 transaksi',               val: '2.610.000',  color: '#7c6fff' },
+  { rank: '05', name: 'Transfer ke Keluarga',   count: '12 transaksi',               val: '1.920.000',  color: '#6b7280' },
+  { rank: '06', name: 'Superindo',              count: '24 transaksi',               val: '1.380.000',  color: '#059669' },
+  { rank: '07', name: 'Alfamart/Indomaret',     count: '18 transaksi',               val: '890.000',    color: '#0d9488' },
+  { rank: '08', name: 'Mr DIY',                 count: '8 transaksi',                val: '670.000',    color: '#d97706' },
+  { rank: '09', name: 'Ayam Bakar Cak Togok',   count: '11 transaksi',               val: '590.000',    color: '#db2777' },
+];
+
+const MONTHLY_DETAIL = {
+  cols: ['Makan & F&B','Belanja Online','QRIS','Grocery','Rumah Tangga','Transfer','E-Wallet','Hiburan','Total'],
+  rows: [
+    { m: 'Jul 25',  d: [490, 310, 420, 280, 190, 210, 120, 80,  2180] },
+    { m: 'Agu 25',  d: [420, 270, 380, 260, 180, 150, 100, 70,  1950] },
+    { m: 'Sep 25',  d: [510, 340, 410, 310, 200, 200, 130, 90,  2340] },
+    { m: 'Okt 25',  d: [580, 420, 490, 340, 230, 260, 160, 90,  2760] },
+    { m: 'Nov 25',  d: [620, 450, 520, 360, 250, 280, 180, 100, 2890] },
+    { m: 'Des 25',  d: [710, 520, 560, 390, 280, 350, 190, 120, 3120] },
+    { m: 'Jan 26',  d: [530, 380, 430, 310, 210, 230, 140, 80,  2430] },
+    { m: 'Feb 26',  d: [480, 340, 390, 290, 190, 180, 110, 70,  2150] },
+    { m: 'Mar 26',  d: [820, 690, 580, 360, 240, 310, 160, 110, 3580] },
+    { m: 'Apr 26',  d: [560, 480, 470, 330, 220, 250, 150, 90,  2640] },
+    { m: 'Mei 26',  d: [500, 400, 420, 300, 200, 220, 130, 80,  2280] },
+    { m: 'Jun 26',  d: [590, 440, 490, 340, 220, 250, 140, 100, 2710] },
+    { m: 'Avg',     d: [568, 420, 464, 323, 218, 241, 143, 90,  2500] },
+  ]
+};
+
+const INSIGHTS = [
+  { cls: 'ic-amber', icon: '📡', title: 'FirstMedia: Biaya Tetap 317rb', body: 'Langganan internet FirstMedia Rp 317.460 tiap bulan via Tokopedia. Sudah pasti dan terprediksi — masuk wajib di budget.' },
+  { cls: 'ic-teal',  icon: '💡', title: 'PLN Naik di Jun 2026', body: '257 kWh = tertinggi 6 bulan terakhir, tagihan Rp 411.500. Pantau Jul 2026 — jika konsisten naik, naikkan alokasi ke 450rb.' },
+  { cls: 'ic-red',   icon: '🎄', title: 'Desember Selalu Tinggi', body: 'Des 2025 Rp 3,12jt — pola seasonal tahunan. Sisihkan tambahan Rp 700rb dari Oktober untuk belanja akhir tahun.' },
+  { cls: 'ic-blue',  icon: '🛍️', title: 'Tokopedia = PLN + Internet + Belanja', body: 'Total Tokopedia ~2,8jt termasuk PLN (~376rb/bln) + FirstMedia (317rb/bln). Belanja online murni sekitar 200–300rb/bln.' },
+  { cls: 'ic-teal',  icon: '🍽️', title: 'F&B Terbesar dari Kategori Variabel', body: 'Makan & F&B rata-rata Rp 520rb/bln. GoFood, Cak Togok, Solaria dominan. Bisa ditekan 20% dengan masak lebih sering.' },
+  { cls: 'ic-purple',icon: '💰', title: 'Budget Rekomendasi: 3,5jt', body: 'Biaya tetap ~1,37jt (PLN+FirstMedia+RT) + variabel ~1,78jt + buffer 330rb = Rp 3,5jt/bln untuk financial health.' },
+];
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+
+// Allocation bars
+const allocList = document.getElementById('allocList');
+const totalAlloc = ALLOC_DATA.reduce((s,a) => s+a.val, 0);
+ALLOC_DATA.forEach(a => {
+  const pct = (a.val / totalAlloc * 100).toFixed(0);
+  allocList.innerHTML += `
+    <div class="alloc-row">
+      <div class="alloc-head">
+        <span class="alloc-name">${a.name}</span>
+        <span class="alloc-val mono" style="color:${a.color}">Rp ${(a.val/1000).toFixed(0)}rb</span>
+      </div>
+      <div class="alloc-track">
+        <div class="alloc-fill" style="width:${pct}%; background:${a.color};"></div>
+      </div>
+      <span class="alloc-note">${a.note} · ${pct}%</span>
+    </div>`;
+});
+
+// PLN grid
+const plnMax = Math.max(...PLN_DATA.map(p => p.kwh));
+const plnGrid = document.getElementById('plnGrid');
+PLN_DATA.forEach(p => {
+  const barPct = (p.kwh / plnMax * 100).toFixed(0);
+  plnGrid.innerHTML += `
+    <div class="pln-month">
+      <div class="pln-m">${p.m}</div>
+      <div class="pln-kwh">${p.kwh}</div>
+      <div class="pln-rp" style="font-size:9px;color:var(--text-muted)">kWh</div>
+      <div class="pln-rp">${(p.rp/1000).toFixed(0)}rb</div>
+      <div class="pln-bar-wrap"><div class="pln-bar" style="width:${barPct}%"></div></div>
+    </div>`;
+});
+
+// Fixed costs
+const fixedTable = document.getElementById('fixedTable');
+FIXED_COSTS.forEach(f => {
+  fixedTable.innerHTML += `<tr>
+    <td style="width:40%"><span class="fc-name">${f.name}</span><span class="fc-note">${f.note}</span></td>
+    <td class="fc-val mono" style="color:${f.flag?'var(--red)':'var(--text)'}">${f.val}</td>
+    <td class="fc-freq">${f.freq}</td>
+  </tr>`;
+});
+
+// Top merchants
+const merchList = document.getElementById('merchList');
+TOP_MERCHANTS.forEach(m => {
+  merchList.innerHTML += `
+    <div class="merch-row">
+      <span class="merch-rank">${m.rank}</span>
+      <span class="merch-name">${m.name}</span>
+      <span class="merch-count">${m.count}</span>
+      <span class="merch-val mono" style="color:${m.color}">${m.val}</span>
+    </div>`;
+});
+
+// Monthly detail table
+const dt = document.getElementById('detailTable');
+let thead = '<thead><tr><th>Bulan</th>';
+MONTHLY_DETAIL.cols.forEach(c => thead += `<th>${c}</th>`);
+thead += '</tr></thead>';
+dt.innerHTML = thead;
+const tbody = document.createElement('tbody');
+// find min/max per col (excl avg row)
+const dataRows = MONTHLY_DETAIL.rows.filter(r => r.m !== 'Avg');
+const colMin = MONTHLY_DETAIL.cols.map((_,ci) => Math.min(...dataRows.map(r => r.d[ci])));
+const colMax = MONTHLY_DETAIL.cols.map((_,ci) => Math.max(...dataRows.map(r => r.d[ci])));
+MONTHLY_DETAIL.rows.forEach(row => {
+  const isAvg = row.m === 'Avg';
+  let tr = `<tr><td>${row.m}</td>`;
+  row.d.forEach((v, ci) => {
+    let cls = '';
+    if (!isAvg) {
+      if (v === colMax[ci]) cls = 'hi';
+      else if (v === colMin[ci]) cls = 'lo';
+    }
+    tr += `<td class="${cls}">${v}</td>`;
+  });
+  tr += '</tr>';
+  tbody.innerHTML += tr;
+});
+dt.appendChild(tbody);
+
+// Insights
+const ig = document.getElementById('insightGrid');
+INSIGHTS.forEach(i => {
+  ig.innerHTML += `
+    <div class="insight-card ${i.cls}">
+      <div class="insight-icon">${i.icon}</div>
+      <div class="insight-title">${i.title}</div>
+      <div class="insight-body">${i.body}</div>
+    </div>`;
+});
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.color = '#6b7280';
+
+// Trend chart
+new Chart(document.getElementById('chartTrend'), {
+  type: 'bar',
+  data: {
+    labels: TREND_DATA.labels,
+    datasets: [{
+      data: TREND_DATA.values,
+      backgroundColor: TREND_DATA.values.map(v =>
+        v > 3000000 ? '#fca5a5' : v > 2700000 ? '#fcd34d' : '#c4b5fd'
+      ),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => 'Rp ' + (ctx.raw/1000).toFixed(0) + 'rb'
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: {
+        grid: { color: '#f3f4f6' },
+        ticks: {
+          font: { size: 10 },
+          callback: v => (v/1000000).toFixed(1)+'jt'
+        }
+      }
+    }
+  }
+});
+
+// Donut chart
+new Chart(document.getElementById('chartDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: ALLOC_DATA.slice(0,8).map(a => a.name),
+    datasets: [{
+      data: ALLOC_DATA.slice(0,8).map(a => a.val),
+      backgroundColor: ALLOC_DATA.slice(0,8).map(a => a.color),
+      borderWidth: 2,
+      borderColor: '#fff',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { font: { size: 10 }, padding: 8, boxWidth: 10 }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ctx.label + ': Rp ' + (ctx.raw/1000).toFixed(0) + 'rb'
+        }
+      }
+    }
+  }
+});
+
+// Allocation bar chart
+new Chart(document.getElementById('chartAlloc'), {
+  type: 'bar',
+  data: {
+    labels: ALLOC_DATA.map(a => a.name),
+    datasets: [{
+      data: ALLOC_DATA.map(a => a.val),
+      backgroundColor: ALLOC_DATA.map(a => a.color),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => 'Rp ' + (ctx.raw/1000).toFixed(0) + 'rb'
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f3f4f6' },
+        ticks: { font: { size: 9 }, callback: v => (v/1000).toFixed(0)+'rb' }
+      },
+      y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>
