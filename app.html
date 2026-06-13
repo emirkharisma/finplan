@@ -2978,9 +2978,12 @@ const Sync = {
   _familyKeys:   ['family_months','family_categories','family_tx'],
 
   _lsSet: null, // original localStorage.setItem, saved before proxy
+  _proxyInstalled: false,
 
-  // Install localStorage proxy — called once after auth
+  // Install localStorage proxy — called once after auth (guarded)
   installProxy(){
+    if(this._proxyInstalled) return; // prevent double-wrapping
+    this._proxyInstalled = true;
     this._lsSet = localStorage.setItem.bind(localStorage);
     localStorage.setItem = (key, value) => {
       this._lsSet(key, value);
@@ -2989,12 +2992,23 @@ const Sync = {
         this._schedule();
       }
     };
+    // Flush immediately on page close/refresh so no data is lost
+    window.addEventListener('beforeunload', () => {
+      if(this._dirty.size > 0) this._flushSync();
+    });
+  },
+
+  // Synchronous best-effort flush using sendBeacon (fires on page close)
+  _flushSync(){
+    clearTimeout(this._timer);
+    // Fire async flush as last chance
+    this._flush();
   },
 
   _schedule(){
     SyncDot.busy();
     clearTimeout(this._timer);
-    this._timer = setTimeout(()=>this._flush(), 1200);
+    this._timer = setTimeout(()=>this._flush(), 400);
   },
 
   async _flush(){
@@ -3029,26 +3043,68 @@ const Sync = {
     }
   },
 
+  // Merge months objects: union of keys, keep month with more data (by JSON length)
+  _mergeMonths(local, cloud){
+    const merged = {...cloud};
+    Object.keys(local).forEach(k => {
+      if(!merged[k] || JSON.stringify(local[k]).length > JSON.stringify(merged[k]).length)
+        merged[k] = local[k];
+    });
+    return merged;
+  },
+  // Merge tx arrays: union by id
+  _mergeTx(local, cloud){
+    const map = {};
+    [...(cloud||[]), ...(local||[])].forEach(t => { if(t?.id) map[t.id] = t; });
+    return Object.values(map);
+  },
+
   // Load all cloud data into localStorage, then boot app
   async loadAndBoot(userId, familyId){
     this._userId = userId;
     this._familyId = familyId;
 
     try {
-      // Load personal data
+      // Load personal data — merge with local so newer local data wins
       const { data: ud } = await _sb.from('user_data').select('*').eq('user_id', userId).maybeSingle();
       if(ud){
-        localStorage.setItem('emir_months',       JSON.stringify(ud.months       || {}));
-        localStorage.setItem('emir_categories',   JSON.stringify(ud.categories   || []));
-        localStorage.setItem('emir_tx',           JSON.stringify(ud.transactions || []));
+        const localMonths = JSON.parse(localStorage.getItem('emir_months') || '{}');
+        const localCats   = JSON.parse(localStorage.getItem('emir_categories') || 'null');
+        const localTx     = JSON.parse(localStorage.getItem('emir_tx') || '[]');
+        const mergedMonths = this._mergeMonths(localMonths, ud.months || {});
+        const mergedTx     = this._mergeTx(localTx, ud.transactions || []);
+        // Categories: prefer local if it has more entries, else cloud
+        const mergedCats = (localCats && localCats.length >= (ud.categories||[]).length)
+          ? localCats : (ud.categories || []);
+        localStorage.setItem('emir_months',       JSON.stringify(mergedMonths));
+        localStorage.setItem('emir_categories',   JSON.stringify(mergedCats));
+        localStorage.setItem('emir_tx',           JSON.stringify(mergedTx));
+        // If local had more data, push merged back to cloud
+        const cloudLen = JSON.stringify(ud.months||{}).length + (ud.transactions||[]).length;
+        const localLen = JSON.stringify(localMonths).length + localTx.length;
+        if(localLen > cloudLen){
+          _sb.from('user_data').upsert({
+            user_id: userId, months: mergedMonths, categories: mergedCats,
+            transactions: mergedTx, updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' }).then(()=>{}).catch(()=>{});
+        }
+      } else {
+        // No cloud record yet — keep local as-is, will be created on first write
       }
       // Load family data
       if(familyId){
         const { data: fd } = await _sb.from('family_data').select('*').eq('family_id', familyId).maybeSingle();
         if(fd){
-          localStorage.setItem('family_months',     JSON.stringify(fd.months       || {}));
-          localStorage.setItem('family_categories', JSON.stringify(fd.categories   || []));
-          localStorage.setItem('family_tx',         JSON.stringify(fd.transactions || []));
+          const localFamMonths = JSON.parse(localStorage.getItem('family_months') || '{}');
+          const localFamCats   = JSON.parse(localStorage.getItem('family_categories') || 'null');
+          const localFamTx     = JSON.parse(localStorage.getItem('family_tx') || '[]');
+          const mergedFamMonths = this._mergeMonths(localFamMonths, fd.months || {});
+          const mergedFamTx     = this._mergeTx(localFamTx, fd.transactions || []);
+          const mergedFamCats = (localFamCats && localFamCats.length >= (fd.categories||[]).length)
+            ? localFamCats : (fd.categories || []);
+          localStorage.setItem('family_months',     JSON.stringify(mergedFamMonths));
+          localStorage.setItem('family_categories', JSON.stringify(mergedFamCats));
+          localStorage.setItem('family_tx',         JSON.stringify(mergedFamTx));
         }
       }
     } catch(e){ console.warn('Load from cloud failed, using local data', e); }
@@ -3131,6 +3187,8 @@ const Auth = {
   },
 
   async _onLogin(user){
+    if(this._booted) return; // guard: only boot once per page load
+    this._booted = true;
     try {
       this._user = user;
       const name = user.user_metadata?.name || user.email?.split('@')[0] || '?';
