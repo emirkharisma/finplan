@@ -1074,23 +1074,13 @@ function initAllocChart(){
 
 function updateAllocChart(){
   if(!_allocChart) return;
-  // Build merged alloc from ALL income sources (DB), but override active income with live DOM values
+  // Always use DB values for all incomes so merged totals are always correct
   const incomes = DB.getIncomes(State.month);
   const mergedAlloc = {};
   incomes.forEach(inc => {
-    const isActive = inc.id === State.activeIncomeId;
-    if(isActive){
-      // Use live DOM values for the active income being edited
-      document.querySelectorAll('.alloc-field[data-cat]').forEach(f => {
-        const v = parseInt(f.value||0)||0;
-        mergedAlloc[f.dataset.cat] = (mergedAlloc[f.dataset.cat]||0) + v;
-      });
-    } else {
-      // Use saved values from DB for other income sources
-      Object.entries(inc.allocations||{}).forEach(([k,v]) => {
-        mergedAlloc[k] = (mergedAlloc[k]||0) + (v||0);
-      });
-    }
+    Object.entries(inc.allocations||{}).forEach(([k,v]) => {
+      mergedAlloc[k] = (mergedAlloc[k]||0) + (v||0);
+    });
   });
   const cats = CATEGORIES.filter(c => c.id !== 'lainnya');
   const values = cats.map(c => mergedAlloc[c.id]||0);
