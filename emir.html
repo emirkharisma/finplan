@@ -838,23 +838,8 @@ function markDefaultDeleted(id){ const a=getDeletedDefaults(); if(!a.includes(id
 function loadCategories(){
   try {
     const saved = JSON.parse(localStorage.getItem('emir_categories') || 'null');
-    if(!saved){ CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); return; }
-    // Re-insert defaults that were accidentally removed — but skip ones user intentionally deleted
-    const deleted = getDeletedDefaults();
+    if(!saved){ CATEGORIES = [{ id:'lainnya', name:'Lainnya', lucide:'package', color:'#6b7280', bg:'#f3f4f6', budget:0 }]; return; }
     const merged = [...saved];
-    DEFAULT_CATEGORIES.forEach(def => {
-      if(deleted.includes(def.id)) return; // user explicitly deleted this — don't restore
-      if(!merged.find(c=>c.id===def.id)){
-        const defIdx = DEFAULT_CATEGORIES.indexOf(def);
-        let insertAfter = -1;
-        for(let i=defIdx-1;i>=0;i--){
-          const prevId = DEFAULT_CATEGORIES[i].id;
-          const pos = merged.findIndex(c=>c.id===prevId);
-          if(pos>=0){ insertAfter=pos; break; }
-        }
-        merged.splice(insertAfter+1, 0, JSON.parse(JSON.stringify(def)));
-      }
-    });
     // Auto-migrate: categories with saving-like names get type:'saving' if not set
     const savingKeywords = ['tabungan','dana darurat','investasi','saving'];
     let migrated = false;
@@ -893,11 +878,7 @@ const DB = {
     if(md?.incomes?.length) return md.incomes;
     // migrate legacy single-income format
     let allocations = md?.allocations||{};
-    // if md.allocations is empty, fall back to cat.budget as default allocation
-    if(!Object.keys(allocations).length){
-      allocations = {};
-      CATEGORIES.forEach(c=>{ if(c.budget) allocations[c.id]=c.budget; });
-    }
+    // no fallback to cat.budget — start empty for new users
     return [{id:'main', label:'Gaji', amount: md?.income||0, allocations}];
   },
   saveIncomes(m, incomes){
