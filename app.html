@@ -1129,22 +1129,29 @@ const App = {
     this.render();
   },
   render(){
-    const txs=DB.getTxForMonth(State.month), md=DB.getMonth(State.month);
-    const main=document.getElementById('appMain');
-    if(State.tab==='overview') main.innerHTML=Render.overview(txs,md);
-    else if(State.tab==='transaksi') main.innerHTML=Render.transaksi(txs,md);
-    else if(State.tab==='tabungan') main.innerHTML=Render.tabungan();
-    else if(State.tab==='keluarga'){
-      main.innerHTML=FamilyApp.renderAlokasi();
-    }
-    else main.innerHTML=Render.pemasukan(md);
-    reicons();
-    if(State.tab==='pemasukan'){
-      requestAnimationFrame(initAllocChart);
-      this._attachSwipe();
-    }
-    if(State.tab==='keluarga'){
-      requestAnimationFrame(initFamAllocChart);
+    try {
+      const txs=DB.getTxForMonth(State.month), md=DB.getMonth(State.month);
+      const main=document.getElementById('appMain');
+      if(!main){ console.error('appMain not found'); return; }
+      if(State.tab==='overview') main.innerHTML=Render.overview(txs,md);
+      else if(State.tab==='transaksi') main.innerHTML=Render.transaksi(txs,md);
+      else if(State.tab==='tabungan') main.innerHTML=Render.tabungan();
+      else if(State.tab==='keluarga'){
+        main.innerHTML=FamilyApp.renderAlokasi();
+      }
+      else main.innerHTML=Render.pemasukan(md);
+      reicons();
+      if(State.tab==='pemasukan'){
+        requestAnimationFrame(initAllocChart);
+        this._attachSwipe();
+      }
+      if(State.tab==='keluarga'){
+        requestAnimationFrame(initFamAllocChart);
+      }
+    } catch(e){
+      console.error('render() error:', e);
+      const main=document.getElementById('appMain');
+      if(main) main.innerHTML=`<div style="padding:20px;color:red;font-size:13px;">Render error: ${e.message}<br><pre style="font-size:11px;overflow:auto">${e.stack}</pre></div>`;
     }
   },
   _attachSwipe(){}, // replaced by native scroll snap on .income-hero-track
