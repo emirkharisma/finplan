@@ -3113,23 +3113,31 @@ const Auth = {
   },
 
   async _onLogin(user){
-    this._user = user;
-    const name = user.user_metadata?.name || user.email?.split('@')[0] || '?';
-    const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    const av = document.getElementById('headerAvatar');
-    if(av) av.textContent = initials;
+    const hideLoading = () => {
+      const el = document.getElementById('appLoading');
+      if(el) el.style.display = 'none';
+    };
+    try {
+      this._user = user;
+      const name = user.user_metadata?.name || user.email?.split('@')[0] || '?';
+      const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const av = document.getElementById('headerAvatar');
+      if(av) av.textContent = initials;
 
-    // Get or create family membership
-    const familyId = await this._getFamilyId(user.id);
+      const familyId = await this._getFamilyId(user.id);
+      await Sync.migrate(user.id, familyId);
+      await Sync.loadAndBoot(user.id, familyId);
 
-    // Migrate then load
-    await Sync.migrate(user.id, familyId);
-    await Sync.loadAndBoot(user.id, familyId);
-
-    document.getElementById('authScreen').classList.add('hidden');
-    const loading = document.getElementById('appLoading');
-    if(loading) loading.style.display = 'none';
-    App.init();
+      document.getElementById('authScreen').classList.add('hidden');
+      hideLoading();
+      App.init();
+    } catch(e) {
+      console.error('_onLogin error:', e);
+      hideLoading();
+      // Boot app anyway with local data
+      document.getElementById('authScreen').classList.add('hidden');
+      App.init();
+    }
   },
 
   async _getFamilyId(userId){
