@@ -375,9 +375,26 @@ body {
   z-index: 20;
   background: var(--bg);
   margin: -16px -16px 0;
-  padding: 12px 16px 8px;
+  padding: 12px 0 8px;
 }
-/* slide animation */
+/* carousel track */
+.income-hero-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 12px;
+  padding: 0 16px;
+  padding-right: 48px; /* peek next card */
+}
+.income-hero-track::-webkit-scrollbar { display: none; }
+.income-hero {
+  scroll-snap-align: start;
+  flex: 0 0 calc(100% - 32px); /* full width minus padding, peek right */
+  min-width: 0;
+}
+/* slide animation — keep for dot click */
 .income-hero.slide-left  { animation: slideInLeft  .28s cubic-bezier(.25,1,.5,1) both; }
 .income-hero.slide-right { animation: slideInRight .28s cubic-bezier(.25,1,.5,1) both; }
 @keyframes slideInLeft  { from { opacity:0; transform:translateX(32px) scale(.97); } to { opacity:1; transform:none; } }
@@ -1129,37 +1146,7 @@ const App = {
       requestAnimationFrame(initFamAllocChart);
     }
   },
-  _attachSwipe(){
-    const hero = document.querySelector('.income-hero');
-    if(!hero) return;
-    let sx=0, sy=0;
-    const onStart = e => { sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
-    const onMove  = e => {
-      const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
-      if(dx>dy && dx>8) e.preventDefault(); // clearly horizontal — block scroll
-    };
-    const onEnd = e => {
-      const dx=e.changedTouches[0].clientX-sx;
-      if(Math.abs(dx)<30) return;
-      const incomes=DB.getIncomes(State.month);
-      const idx=incomes.findIndex(i=>i.id===State.activeIncomeId);
-      if(dx>0){ if(idx>0) this.selectIncome(incomes[idx-1].id,'right'); else if(incomes.length<2) Modal.openAddIncome(); }
-      else { if(idx<incomes.length-1) this.selectIncome(incomes[idx+1].id,'left'); }
-    };
-    hero.addEventListener('touchstart', onStart, {passive:true});
-    hero.addEventListener('touchmove',  onMove,  {passive:false}); // must be non-passive to preventDefault
-    hero.addEventListener('touchend',   onEnd,   {passive:true});
-    // mouse drag for desktop
-    hero.addEventListener('mousedown', e=>{ this._swX=e.clientX; });
-    hero.addEventListener('mouseup',   e=>{
-      const dx=e.clientX-this._swX;
-      if(Math.abs(dx)<30) return;
-      const incomes=DB.getIncomes(State.month);
-      const idx=incomes.findIndex(i=>i.id===State.activeIncomeId);
-      if(dx>0){ if(idx>0) this.selectIncome(incomes[idx-1].id,'right'); else if(incomes.length<2) Modal.openAddIncome(); }
-      else { if(idx<incomes.length-1) this.selectIncome(incomes[idx+1].id,'left'); }
-    });
-  },
+  _attachSwipe(){}, // replaced by native scroll snap on .income-hero-track
   deleteTx(id){
     if(!confirm('Hapus transaksi ini?'))return;
     DB.deleteTx(id); this.render();
@@ -1220,34 +1207,55 @@ const App = {
     const tpls=DB.getTemplates(); tpls.push({name,allocations}); DB.saveTemplates(tpls);
     Modal.close(); this.render();
   },
-  selectIncome(id, dir){
+  selectIncome(id, idx){
     State.activeIncomeId = id;
-    this.render();
+    // Scroll carousel to card
+    const track = document.getElementById('heroTrack');
+    if(track){
+      const card = track.querySelector(`.income-hero[data-id="${id}"]`);
+      if(card) card.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+    }
+    // Update alloc rows without full re-render
+    this._refreshAllocRows();
     if(State.tab==='pemasukan') requestAnimationFrame(initAllocChart);
-    if(dir){
-      requestAnimationFrame(()=>{
-        const el = document.querySelector('.income-hero');
-        if(!el) return;
-        el.classList.remove('slide-left','slide-right');
-        void el.offsetWidth; // force reflow
-        el.classList.add('slide-'+dir);
-        setTimeout(()=>el.classList.remove('slide-'+dir), 350);
-      });
+    // Update dots
+    document.querySelectorAll('.income-dot').forEach(d=>{ d.classList.remove('active'); d.style.background=''; d.style.width=''; });
+    const dot = document.getElementById('heroDot_'+id);
+    if(dot){ dot.classList.add('active'); dot.style.background = idx===0?'#2563eb':idx===1?'#7c3aed':'#059669'; }
+  },
+  _onHeroScroll(track){
+    // Detect which card is snapped and update active state + dots
+    const cards = track.querySelectorAll('.income-hero');
+    let closest = null, minDist = Infinity;
+    cards.forEach(card=>{
+      const dist = Math.abs(card.getBoundingClientRect().left - track.getBoundingClientRect().left);
+      if(dist < minDist){ minDist = dist; closest = card; }
+    });
+    if(!closest) return;
+    const id = closest.dataset.id;
+    const idx = parseInt(closest.dataset.idx);
+    if(id !== State.activeIncomeId){
+      State.activeIncomeId = id;
+      document.querySelectorAll('.income-dot').forEach(d=>{ d.classList.remove('active'); d.style.background=''; d.style.width='6px'; });
+      const dot = document.getElementById('heroDot_'+id);
+      if(dot){ dot.classList.add('active'); dot.style.background = idx===0?'#2563eb':idx===1?'#7c3aed':'#059669'; dot.style.width='18px'; }
+      this._refreshAllocRows();
     }
   },
-  _swX: 0,
-  _swipeStart(e){ this._swX = e.touches[0].clientX; },
-  _swipeEnd(e){
-    const dx = e.changedTouches[0].clientX - this._swX;
-    if(Math.abs(dx) < 40) return;
-    const incomes = DB.getIncomes(State.month);
-    const idx = incomes.findIndex(e=>e.id===State.activeIncomeId);
-    if(dx > 0){ // swipe right → previous card OR add
-      if(idx > 0){ this.selectIncome(incomes[idx-1].id, 'right'); }
-      else if(incomes.length < 2){ Modal.openAddIncome(); }
-    } else { // swipe left → next card
-      if(idx < incomes.length-1){ this.selectIncome(incomes[idx+1].id, 'left'); }
-    }
+  _refreshAllocRows(){
+    // Update alloc field values and section title for active income
+    const m = State.month;
+    const incomes = DB.getIncomes(m);
+    const inc = incomes.find(e=>e.id===State.activeIncomeId)||incomes[0];
+    if(!inc) return;
+    const alloc = inc.allocations||{};
+    document.querySelectorAll('.alloc-field[data-cat]').forEach(f=>{
+      const v = alloc[f.dataset.cat]||0;
+      f.value = v||'';
+    });
+    const title = document.querySelector('.alloc-active-title');
+    if(title) title.textContent = `Alokasi · ${inc.label}`;
+    updateAllocChart();
   },
   // ── Multi-income ──
   addIncome(label, amount, payDay=1){
@@ -1472,28 +1480,39 @@ const Render = {
     const eRemTxt = active?.amount>0 ? (eRem>0?`Sisa ${fmtRp(eRem)}`:(eRem<0?`Over ${fmtRp(Math.abs(eRem))}`:'Penuh ✓')) : 'Alokasi belum diset';
     const canAddMore = incomes.length < 2;
 
+    const CARD_COLORS = ['linear-gradient(145deg,#2563eb 0%,#1a4fd0 55%,#1e40af 100%)','linear-gradient(145deg,#7c3aed 0%,#6d28d9 55%,#5b21b6 100%)','linear-gradient(145deg,#059669 0%,#047857 55%,#065f46 100%)'];
+    const CARD_SHADOWS = ['0 8px 28px rgba(37,99,235,.30)','0 8px 28px rgba(124,58,237,.30)','0 8px 28px rgba(5,150,105,.30)'];
+
     let h=`
     <div class="income-hero-sticky">
-    <div class="income-hero" data-color="${activeIdx}">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
-        <div class="income-hero-label">${active?.label||'Pemasukan'} · ${mFull(State.month)}</div>
-        <div style="display:flex;gap:4px;">
-          <button onclick="event.stopPropagation();Modal.openEditIncome('${activeId}')"
-            style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:5px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
-            ${icon('pencil',12,'currentColor')} Edit
-          </button>
-          ${incomes.length>1?`<button onclick="event.stopPropagation();App.deleteIncome('${activeId}')"
-            style="background:rgba(255,255,255,.12);border:none;border-radius:8px;padding:5px 8px;color:rgba(255,255,255,.8);cursor:pointer;">
-            ${icon('trash-2',13,'currentColor')}
-          </button>`:''}
-        </div>
-      </div>
-      <div class="income-hero-val">${active?.amount?fmtFull(active.amount):'Tap Edit untuk set'}</div>
-      <div class="income-hero-sub">${eRemTxt}${totalIncome!==active?.amount?` · Total ${fmtRp(totalIncome)}`:''}</div>
-      <div class="income-hero-progress"><div class="income-hero-progress-fill" style="width:${ePct}%"></div></div>
+    <div class="income-hero-track" id="heroTrack" onscroll="App._onHeroScroll(this)">
+      ${incomes.map((inc,i)=>{
+        const alloc = Object.entries(inc.allocations||{}).filter(([k])=>CATEGORIES.find(c=>c.id===k)).reduce((s,[,v])=>s+(v||0),0);
+        const rem = (inc.amount||0) - alloc;
+        const pct = inc.amount>0 ? Math.min(alloc/inc.amount*100,100) : 0;
+        const remTxt = inc.amount>0 ? (rem>0?`Sisa ${fmtRp(rem)}`:(rem<0?`Over ${fmtRp(Math.abs(rem))}`:'Penuh ✓')) : 'Alokasi belum diset';
+        return `<div class="income-hero" data-id="${inc.id}" data-idx="${i}" style="background:${CARD_COLORS[i%CARD_COLORS.length]};box-shadow:${CARD_SHADOWS[i%CARD_SHADOWS.length]};">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+            <div class="income-hero-label">${inc.label} · ${mFull(State.month)}</div>
+            <div style="display:flex;gap:4px;">
+              <button onclick="event.stopPropagation();Modal.openEditIncome('${inc.id}')"
+                style="background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:5px 10px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                ${icon('pencil',12,'currentColor')} Edit
+              </button>
+              ${incomes.length>1?`<button onclick="event.stopPropagation();App.deleteIncome('${inc.id}')"
+                style="background:rgba(255,255,255,.12);border:none;border-radius:8px;padding:5px 8px;color:rgba(255,255,255,.8);cursor:pointer;">
+                ${icon('trash-2',13,'currentColor')}
+              </button>`:''}
+            </div>
+          </div>
+          <div class="income-hero-val">${inc.amount?fmtFull(inc.amount):'Tap Edit untuk set'}</div>
+          <div class="income-hero-sub">${remTxt}</div>
+          <div class="income-hero-progress"><div class="income-hero-progress-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('')}
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:-4px 0 12px;">
-      ${incomes.map((e,i)=>`<div class="income-dot${e.id===activeId?' active':''}" onclick="App.selectIncome('${e.id}','${i>activeIdx?'left':'right'}')" style="${e.id===activeId?(i===0?'background:#2563eb;':'background:#7c3aed;'):''}"></div>`).join('')}
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 4px;padding:0 16px;">
+      ${incomes.map((e,i)=>`<div class="income-dot${e.id===activeId?' active':''}" id="heroDot_${e.id}" onclick="App.selectIncome('${e.id}',${i})" style="${e.id===activeId?(i===0?'background:#2563eb;':'i===1?background:#7c3aed;':'background:#059669;'):''}"></div>`).join('')}
       ${canAddMore?`
         <button onclick="Modal.openAddIncome()"
           style="display:flex;align-items:center;gap:5px;background:var(--blue-light);color:var(--blue);border:none;border-radius:99px;padding:5px 12px 5px 8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">
@@ -1530,7 +1549,7 @@ const Render = {
     <div class="section-flat">
       <div class="section-header" style="padding-bottom:4px;">
         <div>
-          <span class="card-title">Alokasi · ${active?.label||''}</span>
+          <span class="card-title alloc-active-title">Alokasi · ${active?.label||''}</span>
           ${active?.amount?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${fmtFull(active.amount)} · ${activeDiff<0?'<span style="color:var(--red)">Over '+fmtRp(Math.abs(activeDiff))+'</span>':activeDiff===0&&activeAlloc>0?'<span style="color:var(--green)">Penuh ✓</span>':'Sisa '+fmtRp(activeDiff)}</div>`:''}
         </div>
         ${DB.getTemplates().length?`<button onclick="Modal.openPickTemplate('${activeId}')"
