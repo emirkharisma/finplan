@@ -1344,8 +1344,9 @@ const Render = {
     // alokasi ke tabungan bulan ini (dari income sources)
     const incomesSrc=DB.getIncomes(State.month);
     const totalAllocSaving=incomesSrc.filter(inc=>{ const pd=(State.month+'-'+String(inc.payDay||1).padStart(2,'0')); return pd<=today(); }).reduce((s,inc)=>s+Object.entries(inc.allocations||{}).filter(([k])=>savingCatIds.has(k)).reduce((ss,[,v])=>ss+(v||0),0),0);
-    const sisa=income?income-totalSpent-totalAllocSaving:totalBudget-totalSpent;
-    const totalUsed=totalSpent+totalAllocSaving;
+    const totalAllocFamily=incomesSrc.filter(inc=>{ const pd=(State.month+'-'+String(inc.payDay||1).padStart(2,'0')); return pd<=today(); }).reduce((s,inc)=>s+Object.entries(inc.allocations||{}).filter(([k])=>familyCatIds.has(k)).reduce((ss,[,v])=>ss+(v||0),0),0);
+    const sisa=income?income-totalSpent-totalAllocSaving-totalAllocFamily:totalBudget-totalSpent;
+    const totalUsed=totalSpent+totalAllocSaving+totalAllocFamily;
     const pct=income>0?Math.min(totalUsed/income*100,100):totalBudget>0?Math.min(totalSpent/totalBudget*100,100):0;
     const sisaColor=sisa<0?'#fca5a5':sisa<(income||totalBudget)*.15?'#fde68a':'#ffffff';
 
