@@ -849,12 +849,12 @@ const CAT_COLORS = [
 
 // Live category list — loads from storage, merges with defaults
 let CATEGORIES = [];
-function getDeletedDefaults(){ try{return JSON.parse(localStorage.getItem('emir_deleted_defaults')||'[]')}catch{return[]} }
-function markDefaultDeleted(id){ const a=getDeletedDefaults(); if(!a.includes(id)){a.push(id);localStorage.setItem('emir_deleted_defaults',JSON.stringify(a));} }
+function getDeletedDefaults(){ try{return JSON.parse(localStorage.getItem(DB._delKey)||'[]')}catch{return[]} }
+function markDefaultDeleted(id){ const a=getDeletedDefaults(); if(!a.includes(id)){a.push(id);localStorage.setItem(DB._delKey,JSON.stringify(a));} }
 
 function loadCategories(){
   try {
-    const saved = JSON.parse(localStorage.getItem('emir_categories') || 'null');
+    const saved = JSON.parse(localStorage.getItem(DB._catKey) || 'null');
     if(!saved){ CATEGORIES = [{ id:'lainnya', name:'Lainnya', lucide:'package', color:'#6b7280', bg:'#f3f4f6', budget:0 }]; return; }
     const merged = [...saved];
     // Auto-migrate: categories with saving-like names get type:'saving' if not set
@@ -870,7 +870,7 @@ function loadCategories(){
   } catch { CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); }
 }
 function saveCategories(){
-  localStorage.setItem('emir_categories', JSON.stringify(CATEGORIES));
+  localStorage.setItem(DB._catKey, JSON.stringify(CATEGORIES));
 }
 loadCategories();
 
@@ -879,7 +879,13 @@ const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt
 
 // ── Storage ──────────────────────────────────────────────────────
 const DB = {
-  _txKey:'emir_tx', _mKey:'emir_months',
+  _prefix:'emir',
+  get _txKey(){ return this._prefix+'_tx'; },
+  get _mKey(){ return this._prefix+'_months'; },
+  get _catKey(){ return this._prefix+'_categories'; },
+  get _tplKey(){ return this._prefix+'_templates'; },
+  get _delKey(){ return this._prefix+'_deleted_defaults'; },
+  setPrefix(p){ this._prefix = p; },
   getTx(){ try{return JSON.parse(localStorage.getItem(this._txKey)||'[]')}catch{return[]} },
   saveTx(a){ localStorage.setItem(this._txKey,JSON.stringify(a)) },
   addTx(t){ const a=this.getTx(); a.push({...t,id:Date.now()+Math.random().toString(36).slice(2)}); this.saveTx(a) },
@@ -887,8 +893,8 @@ const DB = {
   getTxForMonth(m){ return this.getTx().filter(t=>t.date.startsWith(m)) },
   getMonth(m){ try{return(JSON.parse(localStorage.getItem(this._mKey)||'{}'))[m]||null}catch{return null} },
   saveMonth(m,d){ try{const a=JSON.parse(localStorage.getItem(this._mKey)||'{}');a[m]=d;localStorage.setItem(this._mKey,JSON.stringify(a))}catch{} },
-  getTemplates(){ try{return JSON.parse(localStorage.getItem('emir_templates')||'[]')}catch{return[]} },
-  saveTemplates(a){ localStorage.setItem('emir_templates',JSON.stringify(a)) },
+  getTemplates(){ try{return JSON.parse(localStorage.getItem(this._tplKey)||'[]')}catch{return[]} },
+  saveTemplates(a){ localStorage.setItem(this._tplKey,JSON.stringify(a)) },
   // ── Multi-income ──
   getIncomes(m){
     const md = this.getMonth(m);
@@ -1646,7 +1652,7 @@ const Render = {
     }
 
     // Build pocket data from all months
-    const allMonthsData = (() => { try { return JSON.parse(localStorage.getItem('emir_months')||'{}'); } catch { return {}; } })();
+    const allMonthsData = (() => { try { return JSON.parse(localStorage.getItem(DB._mKey)||'{}'); } catch { return {}; } })();
     const allMonths = Object.keys(allMonthsData).sort();
 
     let h = toggle;
@@ -2302,8 +2308,8 @@ const FamilyDB = {
   // Pull income from emir's 'family' type category allocations
   getIncomeFromEmir(m){
     try{
-      const emirMonths = JSON.parse(localStorage.getItem('emir_months')||'{}');
-      const emirCats   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+      const emirMonths = JSON.parse(localStorage.getItem(DB._mKey)||'{}');
+      const emirCats   = JSON.parse(localStorage.getItem(DB._catKey)||'[]');
       const famCatIds  = new Set(emirCats.filter(c=>c.type==='family').map(c=>c.id));
       if(!famCatIds.size) return { total: 0, sources: [] };
       const md = emirMonths[m];
@@ -2335,7 +2341,7 @@ const FamilyApp = {
     const sisa = income - totalSpent;
 
     const emirFamCats = (() => {
-      try{ return JSON.parse(localStorage.getItem('emir_categories')||'[]').filter(c=>c.type==='family'); }catch{ return []; }
+      try{ return JSON.parse(localStorage.getItem(DB._catKey)||'[]').filter(c=>c.type==='family'); }catch{ return []; }
     })();
 
     let h = '';
@@ -2389,8 +2395,8 @@ const FamilyApp = {
     const getFamPayDate = (mo) => {
       let payDay = 1;
       try {
-        const emirMonths = JSON.parse(localStorage.getItem('emir_months')||'{}');
-        const emirCats   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+        const emirMonths = JSON.parse(localStorage.getItem(DB._mKey)||'{}');
+        const emirCats   = JSON.parse(localStorage.getItem(DB._catKey)||'[]');
         const famCatIds  = new Set(emirCats.filter(c=>c.type==='family').map(c=>c.id));
         const md = emirMonths[mo];
         if(md?.incomes){
@@ -2454,8 +2460,8 @@ const FamilyApp = {
           // payDay filter: check personal income sources for this month
           let payDay = 1;
           try {
-            const emirMonths = JSON.parse(localStorage.getItem('emir_months')||'{}');
-            const emirCats   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
+            const emirMonths = JSON.parse(localStorage.getItem(DB._mKey)||'{}');
+            const emirCats   = JSON.parse(localStorage.getItem(DB._catKey)||'[]');
             const famCatIds  = new Set(emirCats.filter(c=>c.type==='family').map(c=>c.id));
             const md = emirMonths[mo];
             if(md?.incomes){
@@ -2976,8 +2982,8 @@ const Sync = {
   _timer: null,
   _dirty: new Set(),
 
-  // Keys owned by personal vs family
-  _personalKeys: ['emir_months','emir_categories','emir_tx'],
+  // Keys owned by personal vs family — _personalKeys is set dynamically on loadAndBoot
+  get _personalKeys(){ return [DB._mKey, DB._catKey, DB._txKey]; },
   _familyKeys:   ['family_months','family_categories','family_tx'],
 
   _lsSet: null, // original localStorage.setItem, saved before proxy
@@ -3021,9 +3027,9 @@ const Sync = {
       if(personalDirty && this._userId){
         await _sb.from('user_data').upsert({
           user_id: this._userId,
-          months:       JSON.parse(localStorage.getItem('emir_months')||'{}'),
-          categories:   JSON.parse(localStorage.getItem('emir_categories')||'[]'),
-          transactions: JSON.parse(localStorage.getItem('emir_tx')||'[]'),
+          months:       JSON.parse(localStorage.getItem(DB._mKey)||'{}'),
+          categories:   JSON.parse(localStorage.getItem(DB._catKey)||'[]'),
+          transactions: JSON.parse(localStorage.getItem(DB._txKey)||'[]'),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
       }
@@ -3067,21 +3073,25 @@ const Sync = {
     this._userId = userId;
     this._familyId = familyId;
 
+    // Namespace personal localStorage keys per user so multiple users on same browser stay isolated
+    DB.setPrefix('u_' + userId.replace(/-/g,'').slice(0,8));
+    loadCategories(); // reload CATEGORIES with correct key after prefix is set
+
     try {
       // Load personal data — merge with local so newer local data wins
       const { data: ud } = await _sb.from('user_data').select('*').eq('user_id', userId).maybeSingle();
       if(ud){
-        const localMonths = JSON.parse(localStorage.getItem('emir_months') || '{}');
-        const localCats   = JSON.parse(localStorage.getItem('emir_categories') || 'null');
-        const localTx     = JSON.parse(localStorage.getItem('emir_tx') || '[]');
+        const localMonths = JSON.parse(localStorage.getItem(DB._mKey) || '{}');
+        const localCats   = JSON.parse(localStorage.getItem(DB._catKey) || 'null');
+        const localTx     = JSON.parse(localStorage.getItem(DB._txKey) || '[]');
         const mergedMonths = this._mergeMonths(localMonths, ud.months || {});
         const mergedTx     = this._mergeTx(localTx, ud.transactions || []);
         // Categories: prefer local if it has more entries, else cloud
         const mergedCats = (localCats && localCats.length >= (ud.categories||[]).length)
           ? localCats : (ud.categories || []);
-        localStorage.setItem('emir_months',       JSON.stringify(mergedMonths));
-        localStorage.setItem('emir_categories',   JSON.stringify(mergedCats));
-        localStorage.setItem('emir_tx',           JSON.stringify(mergedTx));
+        localStorage.setItem(DB._mKey,   JSON.stringify(mergedMonths));
+        localStorage.setItem(DB._catKey, JSON.stringify(mergedCats));
+        localStorage.setItem(DB._txKey,  JSON.stringify(mergedTx));
         // If local had more data, push merged back to cloud
         const cloudLen = JSON.stringify(ud.months||{}).length + (ud.transactions||[]).length;
         const localLen = JSON.stringify(localMonths).length + localTx.length;
@@ -3145,9 +3155,9 @@ const Sync = {
     const hasCloud = await _sb.from('user_data').select('user_id').eq('user_id', userId).maybeSingle();
     if(hasCloud.data) return false; // already migrated
 
-    const months       = JSON.parse(localStorage.getItem('emir_months')||'{}');
-    const categories   = JSON.parse(localStorage.getItem('emir_categories')||'[]');
-    const transactions = JSON.parse(localStorage.getItem('emir_tx')||'[]');
+    const months       = JSON.parse(localStorage.getItem(DB._mKey)||'{}');
+    const categories   = JSON.parse(localStorage.getItem(DB._catKey)||'[]');
+    const transactions = JSON.parse(localStorage.getItem(DB._txKey)||'[]');
     const hasLocal = Object.keys(months).length || categories.length || transactions.length;
     if(!hasLocal) return false;
 
