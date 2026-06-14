@@ -2570,7 +2570,6 @@ const FamilyApp = {
         const totalSpentEver = allFamTxs.filter(t=>t.cat===cat.id).reduce((sum,t)=>sum+t.amount,0);
         const saldoTersedia = (cat.initialBalance||0) + totalAllocEver - totalSpentEver;
         const b = (cat.initialBalance||0) > 0 ? saldoTersedia : allocThisMonth;
-        const label = (cat.initialBalance||0) > 0 ? 'saldo tersedia' : null;
         const pct = b>0 ? Math.min(s/b*100,100) : 0;
         const over = s>b && b>0;
         h += `<div class="budget-row">
@@ -2579,7 +2578,7 @@ const FamilyApp = {
             <div class="budget-info">
               <div class="budget-name">${cat.name}</div>
               <div class="budget-nums ${over?'over-text':''}">
-                <span class="spent">${fmtFull(s)}</span>&nbsp;<span style="color:var(--text-faint)">/</span>&nbsp;${fmtRp(b)}${label?`<span style="font-size:10px;color:var(--text-muted);font-weight:500;"> ${label}</span>`:''}
+                <span class="spent">${fmtFull(s)}</span>&nbsp;<span style="color:var(--text-faint)">/</span>&nbsp;${fmtRp(b)}
               </div>
             </div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${over?'var(--red)':'var(--text-muted)'};">${b>0?Math.round(s/b*100):0}%</div>
