@@ -1335,11 +1335,12 @@ const Render = {
     let h = viewToggleHTML();
     const income=md?.income||0;
     const savingCatIds=new Set(CATEGORIES.filter(c=>c.type==='saving').map(c=>c.id));
-    const spendTxs=txs.filter(t=>!savingCatIds.has(t.category));
+    const familyCatIds=new Set(CATEGORIES.filter(c=>c.type==='family').map(c=>c.id));
+    const spendTxs=txs.filter(t=>!savingCatIds.has(t.category)&&!familyCatIds.has(t.category));
     const savingTxs=txs.filter(t=>savingCatIds.has(t.category));
     const totalSpent=spendTxs.reduce((s,t)=>s+t.amount,0);
     const totalSaved=savingTxs.reduce((s,t)=>s+t.amount,0);
-    const totalBudget=CATEGORIES.filter(c=>c.type!=='saving').reduce((s,c)=>s+getBudget(c,md),0);
+    const totalBudget=CATEGORIES.filter(c=>c.type!=='saving'&&c.type!=='family').reduce((s,c)=>s+getBudget(c,md),0);
     // alokasi ke tabungan bulan ini (dari income sources)
     const incomesSrc=DB.getIncomes(State.month);
     const totalAllocSaving=incomesSrc.filter(inc=>{ const pd=(State.month+'-'+String(inc.payDay||1).padStart(2,'0')); return pd<=today(); }).reduce((s,inc)=>s+Object.entries(inc.allocations||{}).filter(([k])=>savingCatIds.has(k)).reduce((ss,[,v])=>ss+(v||0),0),0);
@@ -1370,7 +1371,7 @@ const Render = {
     </div>`;
 
     // Budget section — flat, no stacked card (exclude saving cats)
-    const budgetCats = CATEGORIES.filter(cat=>cat.type!=='saving').filter(cat=>{ const b=getBudget(cat,md),s=spent(spendTxs,cat.id); return b>0||s>0; });
+    const budgetCats = CATEGORIES.filter(cat=>cat.type!=='saving'&&cat.type!=='family').filter(cat=>{ const b=getBudget(cat,md),s=spent(spendTxs,cat.id); return b>0||s>0; });
     if(budgetCats.length){
       h+=`<div class="section-flat">
         <div class="section-header">
